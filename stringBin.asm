@@ -66,11 +66,39 @@ finish_reading:
     
     loop        finish_reading
     
+
+    PutInt      [resultadoTotal]  
+    nwln   
+    mov     ESI,resultadoTotal 
+    push    dword[resultadoTotal]
+    sub     EAX,EAX   
+
+read_char:
+     mov     EAX,[ESI]       ;mueve el caracter al registro AL 
+     ;PutCh   '['
+     ;PutCh   byte[ESI] 
+     ;PutCh   ']'
+     ;PutCh   ' '      
+     mov     EDX,8000H       ; mask byte = 80H
+     mov     ECX,32        ; loop count to print 8 bits
+print_bit:
+     test    EAX,EDX        ; test does not modify AL
+     jz      print_0      ; if tested bit is 0, print it
+     PutCh   '1'          ; otherwise, print 1
+     jmp     skip1
+print_0:
+     PutCh   '0'          ; print 0
+skip1:
+     shl     EAX,1         ; right-shift mask bit to test
+                          ;  next bit of the ASCII code
+     loop    print_bit    
+    PutCh    " "
+    inc ESI             ;pasa a la siguiente celda de memoria
+    ;jmp function       ;salto incondicional
+
 end:
-    ;nwln
-    PutInt      [resultadoTotal]     
-
-
+    nwln
+    PutInt  [resultadoTotal]
     .EXIT 
 
 ;----------------------------------------------------------
