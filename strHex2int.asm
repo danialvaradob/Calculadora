@@ -7,7 +7,8 @@
 %include "io.mac"
 
 .DATA
-hex_str      	db      "345",0
+input_is        db	"Input is: ",0
+hex_str      	db      "FA",0
 errormsg        db      "Wrong Input",0
 
 
@@ -30,7 +31,6 @@ reading_type:
     jmp         reading_type
 
 finish_reading:
-    PutInt      CX
     mov         DL,byte[EBX]
     cmp         DX, 'F'
     jg          error_outp
@@ -66,8 +66,11 @@ mult_withInt :
     loop        finish_reading
   
 end:
+    PutStr      input_is
+    PutStr      hex_str
     nwln
-    PutInt      [resultadoTotal]     
+    PutInt      [resultadoTotal]   
+    nwln  
 
     .EXIT 
 
@@ -82,9 +85,9 @@ error_outp:
 binary_exponent:
     mov         AX,1 
     mov         DL,16
+    dec         CX ;En este momento el contador esta en 4, pero se requiere
     cmp         CX, 0
     je          zero
-    dec         CX ;En este momento el contador esta en 4, pero se requiere
 
 procedure:
     mul         DL      
