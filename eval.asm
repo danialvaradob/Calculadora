@@ -1,7 +1,7 @@
 %include "io.mac"
 
 .DATA
-overflow_error 	db  	'Ocurrió un overflow en una multiplicación',0
+overflow_error_mul 	db  	'Ocurrió un overflow en una multiplicación',0
 
 .UDATA
 exp          resd 256
@@ -9,33 +9,23 @@ exp          resd 256
 
 .CODE
     .STARTUP
-    ;mov         EBX, exp
-    ;mov 	dword[EBX], -15
-    ;inc		EBX
-    ;inc 	EBX
-    ;inc		EBX
-    ;inc 	EBX
-    ;mov 	dword[EBX], 140000000
-    ;inc		EBX
-    ;inc 	EBX
-    ;inc		EBX
-    ;inc 	EBX
-    ;mov 	dword[EBX],'*'
-    ;inc		EBX
-    ;inc 	EBX
-    ;inc		EBX
-    ;inc 	EBX
-    ;mov 	dword[EBX], 2
-    ;inc		EBX
-    ;inc 	EBX
-    ;inc		EBX
-    ;inc 	EBX
-    ;mov 	dword[EBX],'+'
-    ;inc		EBX
-    ;inc 	EBX
-    ;inc		EBX
-    ;inc 	EBX
-    ;mov 	dword[EBX],'!'
+    mov         EBX, exp
+    mov 	dword[EBX], -1400000
+    inc		EBX
+    inc 	EBX
+    inc		EBX
+    inc 	EBX
+    mov 	dword[EBX], -15
+    inc		EBX
+    inc 	EBX
+    inc		EBX
+    inc 	EBX
+    mov 	dword[EBX],'/'
+    inc		EBX
+    inc 	EBX
+    inc		EBX
+    inc 	EBX
+    mov 	dword[EBX],'!'
 
     mov         ESI,exp ;Pointer to the start of the variable
     
@@ -118,8 +108,12 @@ is_mul:
 
 num1_is_neg:
     test 	EAX, 80000000h
-    jnz         mul_is_positive
-    jmp 	mul_is_negative
+    jz          mul_is_negative
+    not 	ECX
+    inc 	ECX
+    not 	EAX
+    inc 	EAX
+    jmp 	mul_is_positive
 
 mul_is_negative:   
     mul		ECX			;Hace la multiplicacion, si queda el overflow en el EDX, manda un msj y termina
@@ -140,6 +134,34 @@ mul_is_positive:
     jmp  	rotateLeft
 
 is_div:
+    sub 	EDX, EDX
+    dec 	ESI
+    dec 	ESI
+    dec 	ESI
+    dec 	ESI			;Por ejemplo,en la postfijo 34+, hay que posicionarse en el 4.
+    mov         ECX, dword[ESI]    	;Copia el 4 al EDX
+    dec 	ESI
+    dec 	ESI
+    dec 	ESI
+    dec		ESI			;Se posiciona en el 3 y lo copia al EAX
+    mov         EAX, dword[ESI]
+    test   	ECX, 80000000h
+    jnz 	div_num_is_neg
+    jmp 	apply_div
+
+div_num_is_neg:
+    test 	EAX, 80000000h
+    jz          apply_div
+    not 	ECX
+    inc 	ECX
+    not 	EAX
+    inc 	EAX
+    jmp 	apply_div
+
+apply_div:
+    div		ECX			;Hace la multiplicacion, si queda el overflow en el EDX, manda un msj y termina
+    mov         [ESI], EAX		
+    jmp  	rotateLeft
 
 rotateLeft:
     inc   	ESI
@@ -168,10 +190,9 @@ reset:
     jmp 	start
     
 overflow_mul:
-    PutStr	overflow_error
+    PutStr	overflow_error_mul
     nwln
     jmp		exit
-
 
 done:
     PutLInt      [exp]
