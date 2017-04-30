@@ -18,19 +18,39 @@ resultadoTotal resd 1
 .CODE
     .STARTUP
 startCode:
-    mov         EBP, hex_str
-    mov         EBX, hex_str
+    sub         ECX,ECX
+    inc         ESI
+    mov         EBX,ESI
     sub         ECX,ECX
     sub         EDX,EDX
 
-reading_type:
-    cmp         byte[EBP],0
-    je          finish_reading
+reading_typeHex:
+    cmp         byte[ESI],'-'
+    je          endHex
+    cmp         byte[ESI],'+'
+    je          endHex
+    cmp         byte[ESI],'/'
+    je          endHex
+    cmp         byte[ESI],'*'
+    je          endHex
+    cmp         byte[ESI],')'
+    je          endHex
+
+    ;-----
+    ;-----
+    cmp         byte[ESI],'9'
+    jge         hexadecimal_error
+    cmp         byte[ESI],'0'
+    jl          hexadecimal_error
+    ;-----
+    ;-----
+reading_hex:
+
     inc         CX
     inc         EBP
-    jmp         reading_type
+    jmp         reading_typeHex
 
-finish_reading:
+finish_readingHex:
     mov         DL,byte[EBX]
     cmp         DX, 'F'
     jg          error_outp
@@ -49,12 +69,14 @@ is_letter:
 sub_num:
     sub         DX, '0'
 
-mult_withInt :   
+mult_withInt:   
     push        DX                  ;Mete en la pila lo que tenga AL
                                     ;guardar la multiplicacion de la pila
 
     push        CX                  ;guardo el contador en la pila para despues reemplazarlo
-    call        binary_exponent
+    jmp         Hex_exponent
+hex_expo_end:
+    
     pop         CX
     pop         DX                  ;se obtiene lo que se tenia guardado en AX
     mul         DX                  ;si es 2^3 en el AX hay un 8 y en el byte[ESP]
@@ -63,38 +85,47 @@ mult_withInt :
     add         dword[resultadoTotal],EAX
     inc         EBX                  ;el puntero pasa a la siguiente posicion
     
-    loop        finish_reading
+    loop        finish_readingHex
   
-end:
-    PutStr      input_is
-    PutStr      hex_str
-    nwln
-    PutInt      [resultadoTotal]   
-    nwln  
+endHex:
 
-    .EXIT 
+    PutInt      [resultadoTotal]   
+    dec         ESI
+    jmp         add_postfix   
+
 
 error_outp:
     PutStr      errormsg
-    jmp end
+    jmp endHex
 
 ;----------------------------------------------------------
 ;Calling Functions
 ;----------------------------------------------------------
  
-binary_exponent:
+Hex_exponent:
     mov         AX,1 
     mov         DL,16
     dec         CX ;En este momento el contador esta en 4, pero se requiere
     cmp         CX, 0
-    je          zero
+    je          zeroHex
 
-procedure:
+procedureHex:
     mul         DL      
-    loop        procedure
-    ret
+    loop        procedureHex
+    jmp         hex_expo_end         
 
-zero:
+zeroHex:
     mov         AX, 1
-    ret
-    
+    jmp         hex_expo_end
+
+
+hexadecimal_error:
+    cmp         byte[ESI],'A'
+    jl          hexadecimal_error2
+    cmp         byte[ESI],'F'
+    jg          hexadecimal_error2
+    jmp         reading_hex     
+
+hexadecimal_error2:
+    PutStr      hex_error_msg
+      
