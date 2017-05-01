@@ -11,30 +11,57 @@
 %include "io.mac"
 
 .DATA
-operation                db      "b01010*h6B+22 =",0
+welcome_msg             db       "Bienvenido a la calculadora BinOctHex!",0
+input_sign              db       ">>",0
+;operation                db      "b01010+h6B*22*2 =",0
+;operation               db     "10+5 =h"
+result_msg              db       "El resultado es: "
 bin_error_msg            db      "Entrada binaria erronea",0
 errormsg                 db      "ERROR",0
 primer_op                db      1
 overflow_error_mul 	db  	'Ocurrió un overflow en una multiplicación',0
+byteVar db	0
 
 
 .UDATA
+operation      resb 256 
 resultadoTotal resd 1
 cont           resb 1        
 exp            resd 256 ;where the exp op will be stored
+
 complement     resb 1   ;flag
+banderaBinario resb 1   ;si el usuario quiere el resultado en binario, se enciende 
+banderaDecimal resb 1
+banderaHex     resb 1
+banderaOct     resb 1
+first_1_bin    resb 1
 
 .CODE
     .STARTUP
 
 startCalc:
+    nwln
+    PutStr      welcome_msg
+    nwln
+    PutStr      input_sign
+    GetStr      operation
+    
+    ;;;;;;;BANDERAS;;;;;;;;
+    mov         byte[complement],0 ;resetea el complemento
+    mov         byte[banderaBinario],0 ;resetea la bandera de binario
+    mov         byte[banderaDecimal],1      ;DEFAULT
+    mov         byte[banderaHex],0
+    mov         byte[banderaOct],0
+    mov         byte[first_1_bin],0
+    
     mov         ESI,operation   ;Pointer to the start of the variable
     mov         EDI,exp     ;Pointer to the start if the memory variable 
     mov         CX,15   
     ;mov         BX,1            ;to compare
-    
+    cmp         byte[ESI],'#'
+    je          startHelp
 startAll:
-    PutCh       byte[ESI]
+
     cmp         byte[ESI],'d'
     je         readingDecimal1
     cmp         byte[ESI],'b'
@@ -76,9 +103,6 @@ add_exp:
 
     mov        EAX,dword[resultadoTotal] 
     mov        dword[EDI],EAX  
-    nwln
-    PutLInt    dword[EDI]
-    nwln
     inc         ESI  
     inc         EDI   ;next memory varaible in exp
     inc         EDI
@@ -91,9 +115,8 @@ add_exp:
     ; al terminar la operacion tiene que ir sacando todo lo de la pila y resolver
 
 stack_elements:  ;Elementos que quedaron en el stack
-	
     sub		EBX,EBX	
-    pop	         BX      ;element ToS
+    pop	        EBX      ;element ToS
     cmp          BL,'+'
     je          add_operator              
     cmp         BL,'-'
@@ -113,22 +136,41 @@ add_operator:
     jmp         stack_elements
 
 endCode:
-    
-    ;mov         ESI,exp
-    ;mov         CX,25
     mov     dword[EDI],'!'
-    
-    nwln
+
 ;print_variable:
-    ;mov     EBX,dword[ESI + 1]
-    ;nwln
-    ;PutCh   BL
-    ;inc     ESI
-    ;loop    print_variable
+
+    cmp     byte[ESI + 2],'b'
+    je      activar_banderaBin
+    cmp     byte[ESI + 2],'h'
+    je      activar_banderaHex
+    cmp     byte[ESI + 2],'o'
+    je      activar_banderaOct
+
+    jmp     startEval
+activar_banderaBin:
+    mov     byte[banderaBinario],1
+    mov         byte[banderaDecimal],0      ;DEFAULT
+    mov         byte[banderaHex],0
+    mov         byte[banderaOct],0
+    jmp     startEval
+
+activar_banderaHex:
+    mov     byte[banderaBinario],0
+    mov         byte[banderaDecimal],0      ;DEFAULT
+    mov         byte[banderaHex],1
+    mov         byte[banderaOct],0
+    jmp     startEval
+
+activar_banderaOct:
+    mov     byte[banderaBinario],0
+    mov         byte[banderaDecimal],0      ;DEFAULT
+    mov         byte[banderaHex],0
+    mov         byte[banderaOct],1
     jmp     startEval
     
-    .EXIT
-    
+        
+                
 ;--------------------------------------------------------------------
 ;       Funcion utilizada para comparar los operandos
 ;   
@@ -145,7 +187,6 @@ operator_priority:
     cmp         BL,'-'
     je          continue_priorityToSMinPlus
     cmp         BL,'+'
-    ;PutCh       'X'
     je          continue_priorityToSMinPlus
     cmp         BL,'/'
     je          continue_priorityToSMultDiv
@@ -158,11 +199,7 @@ operator_priority:
 firsttime:
     sub         EAX,EAX
     mov         AL,byte[ESI]
-    push        EAX
-    ;inc         ESI
-    ;sub         CX,CX
-    ;PutCh       'Y'
-    ;ret  
+    push        EAX  
     inc         byte[primer_op]
     jmp         operator_priority_end
 
@@ -170,33 +207,27 @@ continue_priorityToSMinPlus:  ;ToS is a '-'  or '+'
     cmp         byte[ESI],'('   
     je          both_elements_to_stack
     cmp         byte[ESI],')'
-    je          right_parenthesis
-                                
+    je          right_parenthesis                          
     cmp         byte[ESI],'+'
     je         newE_to_stack    ;if the new element is not a / or * is a - or +
     cmp         byte[ESI],'-'
     je         newE_to_stack    ;if the new element is not a / or * is a - or +
     ;jmp         newE_to_stack         
 both_elements_to_stack:        
-    push        BX              ;pushes the ToS back to the stack
+    push        EBX              ;pushes the ToS back to the stack
     sub         EAX,EAX 
     mov         AL,byte[ESI]    ;moves the '*' or '/' new element to the AL register
-    push        AX              ;pushes to the ToS the new element    
+    push        EAX              ;pushes to the ToS the new element    
     jmp         end_priority1               
-                            
-                           
-
 
 continue_priorityToSMultDiv:    ;ToS is a '*' or '/'
     cmp         byte[ESI],'('   
     je          both_elements_to_stack
     cmp         byte[ESI],')'
-    je          right_parenthesis
-                                
+    je          right_parenthesis                          
     jmp         newE_to_stack    ;the new element always enters the stack and the last eleme
                                  ;is added to the variable
-            
-                            
+                                
 right_parenthesis:
     cmp         BL,'('
     je          end_priority1   ;no need to save the '(' anywhere
@@ -217,7 +248,7 @@ newE_to_stack:  ;less or equal priority enters the stack and adds the last eleme
                 ;poped out of the stack to the variable
     sub         EAX,EAX       
     mov         AL,byte[ESI]	;copies the operator in the variable (lo que digita el usuario)
-    push        AX
+    push 	EAX
     mov         dword[EDI],EBX   ;moves the operand taken from stack to the memory variable
     inc         EDI
     inc         EDI
@@ -274,20 +305,17 @@ minus_sign:
     sub         EAX,EAX
     mov         AX,0
     mov         BL,byte[ESI+1]
-    ;mov         dword[result]
     sub         EAX,EBX       ;saves the new number in AX
     inc         ESI                  ;moves to the next memory cell   
     mov        AL,byte[ESI]
-    ;PutCh      AL
     mov        dword[EDI],EAX
     
     inc         ESI
-    ;nwln
-    ;PutLInt     dword[EDI]
     inc         EDI   ;next memory varaible in exp
     jmp         start 
     
  entry_error:
+ PutCh  'Q'
     PutStr      errormsg
 
 ;xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -320,33 +348,33 @@ readingDecimal:
      
 condDecimal:   
      mov     EDX, 10
-     cmp     byte[EBX],'-'
+     cmp     byte[ESI],'-'
      je      question
-     cmp     byte[EBX],'*'
+     cmp     byte[ESI],'*'
      je      question
-     cmp     byte[EBX],')'
+     cmp     byte[ESI],')'
      je      question
-     cmp     byte[EBX],'/'
+     cmp     byte[ESI],'/'
      je      question
-     cmp     byte[EBX],32
+     cmp     byte[ESI],'+'
      je      question
-     cmp     byte[EBX],'='
+     cmp     byte[ESI],32
      je      question
-     cmp     byte[EBX], '9'
+     cmp     byte[ESI],'='
+     je      question
+     cmp     byte[ESI], '9'
      jg      error_outputDecimal
-     cmp     byte[EBX], '0'
+     cmp     byte[ESI], '0'
      jl      error_outputDecimal
-     sub     byte[EBX], '0'
+     sub     byte[ESI], '0'
      mul     EDX
      sub     ECX, ECX
-     mov     CL, byte[EBX]
+     mov     CL, byte[ESI]
      add     EAX, ECX
-     inc     EBX 
+     inc     ESI 
      jmp condDecimal
 
 question:
-     ;PutLInt EAX
-     ;nwln
      jmp doneDecimal
 
 error_outputDecimal:
@@ -356,7 +384,6 @@ error_outputDecimal:
 
 doneDecimal:
     mov         dword[resultadoTotal],EAX
-    ;PutLInt      [resultadoTotal]  
     dec         ESI
     jmp         add_exp  
     
@@ -384,7 +411,6 @@ doneDecimal:
 startB:
     sub         CX,CX
     inc         ESI
-    ;PutCh       byte[ESI]
     mov         EBX,ESI  ;Pointer to memory direction
     mov         CX,CX
     mov         DX,0
@@ -428,7 +454,6 @@ continue_setting_counter:
     inc         CX
     inc         ESI
     inc         byte[cont]
-;    PutInt      CX
     mov         byte[resultadoTotal],0
     jmp         setting_counter
 
@@ -470,8 +495,6 @@ endB:
     inc         dword[resultadoTotal]
     
 terminarB:
-    PutLInt      [resultadoTotal]  
-    ;nwln
     dec         ESI
     mov         byte[complement],0
     jmp         add_exp         
@@ -511,7 +534,9 @@ zero:
 
 
 binary_error:
+    nwln
     PutStr      bin_error_msg
+    nwln
     
 
   ;----------------------------------------------------------------------------------------
@@ -603,14 +628,16 @@ hex_expo_end:
     loop        finish_readingHex
   
 endHex:
-    PutLInt      [resultadoTotal]  
+    ;PutLInt      [resultadoTotal]  
     
     dec         ESI
     jmp         add_exp   
 
 
 error_outp:
+    nwln
     PutStr      errormsg
+    nwln
     jmp endHex
 
 ;----------------------------------------------------------
@@ -652,6 +679,9 @@ hexadecimal_error2:
 ;=======================================================================================
 ;=======================================================================================
  startEval:
+ 
+    
+ 
     sub         EBX,EBX
     sub         EDX,EDX
     sub         ECX,ECX
@@ -665,9 +695,7 @@ start:
     sub 	EAX, EAX
 
     mov         EAX,dword[ESI]	;En en EAX queda el valor a comparar
-    ;nwln        
-    ;PutLInt     EAX
-    cmp 	        EAX,'!'
+    cmp 	EAX,'!'
     je 		done
     cmp         EAX,'+'
     je          is_sum
@@ -694,6 +722,10 @@ is_sum:
     dec 	ESI
     dec		ESI			;Se posiciona en el 3 y lo copia al EAX
     mov         EAX, dword[ESI]    
+    PutLInt 	EAX
+    PutCh	'+'
+    PutLInt 	EDX
+    nwln
     add         EAX, EDX      		;hace la suma
     mov         [ESI], EAX		;guarda el resulado en la posicion del 3
 					;despues de hacer eso, el 4 y el + son inservibles,
@@ -714,6 +746,10 @@ is_sub:
     dec 	ESI
     dec		ESI			;Se posiciona en el 3 y lo copia al EAX
     mov         EAX, dword[ESI]    
+    PutLInt 	EAX
+    PutCh	'-'
+    PutLInt 	EDX
+    nwln
     sub         EAX, EDX      		;hace la suma
     mov         [ESI], EAX		;guarda el resulado en la posicion del 3
 					;despues de hacer eso, el 4 y el + son inservibles,
@@ -750,7 +786,11 @@ num1_is_neg:
     inc 	EAX
     jmp 	mul_is_positive
 
-mul_is_negative:   
+mul_is_negative: 
+    PutLInt 	EAX
+    PutCh	'*'
+    PutLInt 	ECX 
+    nwln 
     mul		ECX			;Hace la multiplicacion, si queda el overflow en el EDX, manda un msj y termina
     cmp 	EAX, 0
     jg 		overflow_mul
@@ -759,6 +799,10 @@ mul_is_negative:
     jmp  	rotateLeft
 
 mul_is_positive:
+    PutLInt 	EAX
+    PutCh	'*'
+    PutLInt 	ECX 
+    nwln 
     mul		ECX			;Hace la multiplicacion, si queda el overflow en el EDX, manda un msj y termina
 
     test	EDX, 4294967295
@@ -794,6 +838,10 @@ div_num_is_neg:
     jmp 	apply_div
 
 apply_div:
+    PutLInt 	EAX
+    PutCh	'/'
+    PutLInt 	EDX 
+    nwln 
     div		ECX			;Hace la multiplicacion, si queda el overflow en el EDX, manda un msj y termina
     mov         [ESI], EAX		
     jmp  	rotateLeft
@@ -830,12 +878,173 @@ overflow_mul:
     jmp		exit
 
 done:
-    PutLInt      dword[exp]
     nwln
+    cmp          byte[banderaBinario],1
+    je          read_charBin
+    cmp         byte[banderaHex],1
+    je          read_charHex
+    
+    
+    PutLInt      dword[exp]
+    jmp         startCalc
+;
+;BIN---BIN-----BIN-----BIN----BIN----BIN-----BIN----BIN----
+;BIN---BIN-----BIN-----BIN----BIN----BIN-----BIN----BIN----
+;BIN---BIN-----BIN-----BIN----BIN----BIN-----BIN----BIN----
+;BIN---BIN-----BIN-----BIN----BIN----BIN-----BIN----BIN----
+;BIN---BIN-----BIN-----BIN----BIN----BIN-----BIN----BIN----
+;BIN---BIN-----BIN-----BIN----BIN----BIN-----BIN----BIN----
+;BIN---BIN-----BIN-----BIN----BIN----BIN-----BIN----BIN----
+read_charBin:
+     mov     byte[first_1_bin],1
+     cmp     dword[exp],0
+     jl      print_bin_complement 
+read_charBin1:
+     mov     EAX,dword[exp]       ;mueve el caracter al registro AL      
+     mov     EDX,80000000H       ; mask byte = 80H
+     mov     ECX,32        ; loop count to print 8 bits
+     
+print_bit:
+     test    EAX,EDX        ; test does not modify AL
+     jz      print_0      ; if tested bit is 0, print it
+     cmp    byte[first_1_bin],1
+     je     first_time_binary
+print_1:     
+     PutCh   '1'          ; otherwise, print 1
+     jmp     skip1
+print_0:
+     cmp    byte[first_1_bin],1  
+     je     skip1
+     PutCh   '0'          ; print 0
+skip1:
+     shl     EAX,1         ; right-shift mask bit to test
+                           ;  next bit of the ASCII code
+     loop    print_bit    
+    PutCh    " "
+    jmp     startCalc
+first_time_binary:
+    PutCh   '0'
+    mov     byte[first_1_bin],0
+    jmp     print_1
+    
+    
+
+print_bin_complement:
+    mov         byte[first_1_bin],0
+    jmp         read_charBin1      
+
+;BIN---BIN-----BIN-----BIN----BIN----BIN-----BIN----BIN----
+;BIN---BIN-----BIN-----BIN----BIN----BIN-----BIN----BIN----
+;BIN---BIN-----BIN-----BIN----BIN----BIN-----BIN----BIN----
+;BIN---BIN-----BIN-----BIN----BIN----BIN-----BIN----BIN----
+;BIN---BIN-----BIN-----BIN----BIN----BIN-----BIN----BIN----
+;BIN---BIN-----BIN-----BIN----BIN----BIN-----BIN----BIN----
+;BIN---BIN-----BIN-----BIN----BIN----BIN-----BIN----BIN----
+
+
+ ;-------HEX---HEX-----HEXHEXHEX-----HEX----HEX----HEX-----HEX-----
+ ;-------HEX---HEX-----HEX-----------HEX----HEX----HEX-----HEX-----
+ ;-------HEX---HEX-----HEX-----------HEX----HEX----HEX-----HEX-----
+ ;-------HEX---HEX-----HEX-----------HEX----HEX----HEX-----HEX-----
+ ;-------HEXHEXHEX-----HEXHEXHEX-----HEX----HEX----HEX-----HEX-----
+ ;-------HEX---HEX-----HEX-----------HEX----HEX----HEX-----HEX-----
+ ;-------HEX---HEX-----HEX-----------HEX----HEX----HEX-----HEX-----
+ ;-------HEX---HEX-----HEX-----------HEX----HEX----HEX-----HEX-----
+ ;-------HEX---HEX-----HEX-----------HEX----HEX----HEX-----HEX-----
+ ;-------HEX---HEX-----HEXHEXHEX-----HEX----HEX----HEX-----HEX-----
+ 
+
+read_charHex:
+     mov     EAX, [exp]
+     shr     EAX, 28        ; move upper 4 bits to lower half
+     mov     CX,8         ; loop count - 2 hex digits to print
+print_digitHex:
+     test    AL, 1111b
+     jz      byte_is_zeroHex
+     jmp     byte_not_zeroHex
+
+byte_is_zeroHex:
+     cmp     byte[byteVar], 0
+     je     skipHex2
+
+byte_not_zeroHex:
+     inc     byte[byteVar]
+     cmp     AL,9         ; if greater than 9
+     jg      A_to_FHex       ; convert to A through F digits
+     add     AL,'0'       ; otherwise, convert to 0 through 9
+     jmp     skipHex
+
+A_to_FHex:
+     add     AL,'A'-10    ; subtract 10 and add 'A'
+                          ; to convert to A through F
+skipHex:
+     PutCh   AL           ; write the first hex digit
+
+skipHex2:
+     mov     EAX,[exp]   ; restore input character in AL
+     cmp     CX,8
+     je      count_is_8
+     cmp     CX,7
+     je      count_is_7
+     cmp     CX,6
+     je      count_is_6
+     cmp     CX,5
+     je      count_is_5
+     cmp     CX,4
+     je      count_is_4
+     cmp     CX,3
+     je      count_is_3
+     and     AL, 0Fh
+
+cont_printing_hex:
+     loop    print_digitHex
+     PutCh   'h'
+     nwln
+     jmp     exit_printing_hex
+
+count_is_8:
+     shr     EAX, 24
+     and     AL, 0Fh
+     jmp     cont_printing_hex
+count_is_7:
+     shr     EAX, 20
+     and     AL, 0Fh
+     jmp     cont_printing_hex 
+count_is_6:
+     shr     EAX, 16
+     and     AL, 0Fh
+     jmp     cont_printing_hex
+count_is_5:
+     shr     EAX, 12
+     and     AL, 0Fh
+     jmp     cont_printing_hex
+count_is_4:
+     shr     EAX, 8
+     and     AL, 0Fh
+     jmp     cont_printing_hex
+count_is_3:
+     shr     EAX, 4
+     and     AL, 0Fh
+     jmp     cont_printing_hex
+
+exit_printing_hex:
+
+    jmp     startCalc
+ 
+ ;-------HEX---HEX-----HEX----HEX----HEX----HEX----HEX-----HEX-----
+ ;-------HEX---HEX-----HEX----HEX----HEX----HEX----HEX-----HEX-----
+ ;-------HEX---HEX-----HEX----HEX----HEX----HEX----HEX-----HEX-----
+ ;-------HEX---HEX-----HEX----HEX----HEX----HEX----HEX-----HEX-----
+ ;-------HEX---HEX-----HEX----HEX----HEX----HEX----HEX-----HEX-----
+ ;-------HEX---HEX-----HEX----HEX----HEX----HEX----HEX-----HEX-----
+ ;-------HEX---HEX-----HEX----HEX----HEX----HEX----HEX-----HEX-----
+ ;-------HEX---HEX-----HEX----HEX----HEX----HEX----HEX-----HEX-----
+ 
 
 exit:
     .EXIT
-
+startHelp:
+    jmp     startCalc
 
   
   
