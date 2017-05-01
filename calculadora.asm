@@ -11,17 +11,17 @@
 %include "io.mac"
 
 .DATA
-welcome_msg             db       "Bienvenido a la calculadora BinOctHex!",0
-input_sign              db       ">>",0
+welcome_msg              db       "Bienvenido a la calculadora BinOctHex!",0
+input_sign               db       ">>",0
 ;operation                db      "b01010+h6B*22*2 =",0
 ;operation               db     "10+5 =h"
-result_msg              db       "El resultado es: "
+result_msg               db       "El resultado es: "
 bin_error_msg            db      "Entrada binaria erronea",0
 errormsg                 db      "ERROR",0
 primer_op                db      1
 overflow_error_mul 	db  	'Ocurrió un overflow en una multiplicación',0
-byteVar db	0
-
+byteVar                  db	0
+byteVarOct               db	0
 
 .UDATA
 operation      resb 256 
@@ -35,6 +35,7 @@ banderaDecimal resb 1
 banderaHex     resb 1
 banderaOct     resb 1
 first_1_bin    resb 1
+variableBin    resd 1   ;variable utilizada para 
 
 .CODE
     .STARTUP
@@ -883,6 +884,8 @@ done:
     je          read_charBin
     cmp         byte[banderaHex],1
     je          read_charHex
+    cmp         byte[banderaOct],1
+    je          read_char_oct
     
     
     PutLInt      dword[exp]
@@ -1040,6 +1043,114 @@ exit_printing_hex:
  ;-------HEX---HEX-----HEX----HEX----HEX----HEX----HEX-----HEX-----
  ;-------HEX---HEX-----HEX----HEX----HEX----HEX----HEX-----HEX-----
  
+ 
+;------OCT------OCT------OCT------OCT------OCT------OCT------OCT------OCT------OCT
+;------OCT------OCT------OCT------OCT------OCT------OCT------OCT------OCT------OCT
+;------OCT------OCT------OCT------OCT------OCT------OCT------OCT------OCT------OCT
+;------OCT------OCT------OCT------OCT------OCT------OCT------OCT------OCT------OCT
+;------OCT------OCT------OCT------OCT------OCT------OCT------OCT------OCT------OCT
+;------OCT------OCT------OCT------OCT------OCT------OCT------OCT------OCT------OCT
+;------OCT------OCT------OCT------OCT------OCT------OCT------OCT------OCT------OCT
+;------OCT------OCT------OCT------OCT------OCT------OCT------OCT------OCT------OCT
+
+ 
+ read_char_oct:
+     mov     EAX, [exp]
+     shr     EAX, 30      ; move upper 3 bits to lower half
+     mov     CX,11         ; loop count - 2 hex digits to print
+print_digit_oct:
+     test    AL, 111b
+     jz      oct_is_zero
+     jmp     oct_not_zero
+
+oct_is_zero:
+     cmp     byte[byteVarOct], 0
+     je      skip_oct
+
+oct_not_zero:
+     inc     byte[byteVarOct]
+     add     AL,'0'       ; otherwise, convert to 0 through 9
+     PutCh   AL           ; write the first hex digit
+
+skip_oct:
+     mov     EAX,[exp]   ; restore input character in AL
+     cmp     CX,11
+     je      count_oct_is_11
+     cmp     CX,10
+     je      count_oct_is_10
+     cmp     CX,9
+     je      count_oct_is_9
+     cmp     CX,8
+     je      count_oct_is_8
+     cmp     CX,7
+     je      count_oct_is_7
+     cmp     CX,6
+     je      count_oct_is_6
+     cmp     CX,5
+     je      count_oct_is_5
+     cmp     CX,4
+     je      count_oct_is_4
+     cmp     CX,3
+     je      count_oct_is_3
+     and     AL, 07h
+
+cont_printing_oct:
+     loop    print_digit_oct
+     PutCh   'o'
+     nwln
+     jmp     exit_printing_oct
+
+count_oct_is_11:
+     shr     EAX, 27
+     and     AL, 07h
+     jmp     cont_printing_oct 
+count_oct_is_10:
+     shr     EAX, 24
+     and     AL, 07h
+     jmp     cont_printing_oct
+count_oct_is_9:
+     shr     EAX, 21
+     and     AL, 07h
+     jmp     cont_printing_oct
+count_oct_is_8:
+     shr     EAX, 18
+     and     AL, 07h
+     jmp     cont_printing_oct
+count_oct_is_7:
+     shr     EAX, 15
+     and     AL, 07h
+     jmp     cont_printing_oct 
+count_oct_is_6:
+     shr     EAX, 12
+     and     AL, 07h
+     jmp     cont_printing_oct
+count_oct_is_5:
+     shr     EAX, 9
+     and     AL, 07h
+     jmp     cont_printing_oct
+count_oct_is_4:
+     shr     EAX, 6
+     and     AL, 07h
+     jmp     cont_printing_oct
+count_oct_is_3:
+     shr     EAX, 3
+     and     AL, 07h
+     jmp     cont_printing_oct
+
+exit_printing_oct:
+      jmp startCalc
+      
+      
+      
+;
+;------OCT------OCT------OCT------OCT------OCT------OCT------OCT------OCT------OCT
+;------OCT------OCT------OCT------OCT------OCT------OCT------OCT------OCT------OCT
+;------OCT------OCT------OCT------OCT------OCT------OCT------OCT------OCT------OCT
+;------OCT------OCT------OCT------OCT------OCT------OCT------OCT------OCT------OCT
+;------OCT------OCT------OCT------OCT------OCT------OCT------OCT------OCT------OCT
+;------OCT------OCT------OCT------OCT------OCT------OCT------OCT------OCT------OCT
+;------OCT------OCT------OCT------OCT------OCT------OCT------OCT------OCT------OCT
+;------OCT------OCT------OCT------OCT------OCT------OCT------OCT------OCT------OCT
 
 exit:
     .EXIT
