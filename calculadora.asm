@@ -14,7 +14,8 @@
 welcome_msg              db       "Bienvenido a la calculadora BinOctHex!",0
 input_sign               db       ">>",0
 ;operation                db      "b01010+h6B*22*2 =",0
-;operation               db     "10+5 =h"
+operation               db     "10+5+o10 =o"
+;operation                db      "#ayuda"
 result_msg               db       "El resultado es: "
 bin_error_msg            db      "Entrada binaria erronea",0
 errormsg                 db      "ERROR",0
@@ -23,19 +24,41 @@ overflow_error_mul 	db  	'Ocurrió un overflow en una multiplicación',0
 byteVar                  db	0
 byteVarOct               db	0
 
-.UDATA
-operation      resb 256 
-resultadoTotal resd 1
-cont           resb 1        
-exp            resd 256 ;where the exp op will be stored
 
-complement     resb 1   ;flag
-banderaBinario resb 1   ;si el usuario quiere el resultado en binario, se enciende 
-banderaDecimal resb 1
-banderaHex     resb 1
-banderaOct     resb 1
-first_1_bin    resb 1
-variableBin    resd 1   ;variable utilizada para 
+
+
+
+
+
+ayuda0			db 	'----------------AYUDA----------------',0
+ayuda1			db	'La calculadora BinOctHex realiza operaciones combinadas utilizando los operadores aritméticos básicos: +, -, * y /',0
+ayuda2			db	'Adicionalmente a estos operadores básicos, puede hacer uso de paréntesis para indicar alguna operación con mayor prioridad: (expresión).',0
+ayuda3			db	'*NOTA*: Si hay operandos antes de iniciar un paréntesis, debe indicar qué operador desea aplicar entre el operando anterior al parentesis y el resultado de la expresión dentro de los paréntesis; igualemente, debe indicar el operador si hay operandos después del paréntesis.',0
+ayuda4			db	'*OPERANDOS*: La calculadora permite 4 diferentes bases para indicar un número: binario, octal, decimal y hexadecimal. El valor máximo posible a representar para cada base es 2^31-1 (2147483647 en decimal).',0
+ayuda5			db	'Para indicar una base, se coloca una letra reservada antes de escribir el número, las letras son: b-(binario), o-(octal), d-(decimal) y h-(hexadecimal), si se encuentra un numero sin letra al inicio, se toma como un número decimal.',0
+ayuda6			db	'*NÚMEROS BINARIOS*: Por posición solo acepta un 1 o un 0. Si el número inicia con un 1 se tomará como complemento a la base 2, de lo contrario, tomará el numero de manera positiva.',0
+ayuda7			db   	'*NÚMEROS OCTALES*: Por posición acepta todos los digitos entre el 0 y el 7',0
+ayuda8			db   	'*NÚMEROS HEXADECIMALES*: Por posición acepta todos los digitos entre el 0 y el 9, y todas las letras entre A y F',0
+ayuda9			db   	'*NÚMEROS DECIMALES*: Por posición acepta todos los digitos entre el 0 y el 9',0
+ayuda10			db	'Para poder evaluar una expresión deberá escribir los operandos y operadores de forma correcta anteriormente explicado, cuando tenga lista la expresión DEBE agregar un espacio y un = al final de la expresión. Esto dará el resultado en decimal.',0
+ayuda11			db	'Si desea imprimir el resultado en alguna base específica del programa, puede agregar una letra reservada despues del =',0
+ayuda12			db	'Por ejemplo: num+(num2*num3/num4)-num5 =b   Esto dará el resultado de la expresión en binario',0
+
+
+.UDATA
+;operation      resb 256 
+resultadoTotal  resd 1
+cont            resb 1        
+exp             resd 256 ;where the exp op will be stored
+
+complement      resb 1   ;flag
+banderaBinario  resb 1   ;si el usuario quiere el resultado en binario, se enciende 
+banderaDecimal  resb 1
+banderaHex      resb 1
+banderaOct      resb 1
+first_1_bin     resb 1
+variableBin     resd 1   ;variable utilizada para 
+minus_sign_flag resb 1   ;bandera utilizada para saber si se debe de cambiar el signo
 
 .CODE
     .STARTUP
@@ -45,7 +68,7 @@ startCalc:
     PutStr      welcome_msg
     nwln
     PutStr      input_sign
-    GetStr      operation
+    ;GetStr      operation
     
     ;;;;;;;BANDERAS;;;;;;;;
     mov         byte[complement],0 ;resetea el complemento
@@ -65,10 +88,15 @@ startAll:
 
     cmp         byte[ESI],'d'
     je         readingDecimal1
-    cmp         byte[ESI],'b'
+    cmp         byte[ESI],'b' ;Salto a Binario
     je          startB
-    cmp         byte[ESI],'h'
+    cmp         byte[ESI],'h' ;Salto a Hexadecimal
     je          startCodeHex
+    
+    cmp         byte[ESI],'o'  ;Salto a Octal
+    je          startCodeOct
+    
+    
     cmp         byte[ESI],20h
     je          stack_elements         
     cmp         byte[ESI],'='
@@ -279,6 +307,7 @@ end_priority:
 ;xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ;xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 firstCh_op:
+    
           
     cmp         byte[ESI],'/'
     je          entry_error   
@@ -293,31 +322,30 @@ firstCh_op:
     cmp         byte[ESI + 1],'*'    
     je          entry_error            ;2 consecutives operators == error
     cmp         byte[ESI],'+'          ;does nothing, +1 = 1
-    je          sum_sign       
-    jmp         minus_sign   
-
+    je          sum_sign  
+    cmp         byte[ESI+1],'-'   
+    je         minus_sign   
+    cmp         byte[ESI +1],'0'
+    jl          not_number_nor_oper
+    cmp         byte[ESI + 1],'9'
+    jg          not_number_nor_oper 
+    jmp         is_a_number
+    
  
 sum_sign:
     sub         BX,BX   
     jmp         operator_priority_end         
       
 minus_sign:
-    sub         EBX,EBX
-    sub         EAX,EAX
-    mov         AX,0
-    mov         BL,byte[ESI+1]
-    sub         EAX,EBX       ;saves the new number in AX
-    inc         ESI                  ;moves to the next memory cell   
-    mov        AL,byte[ESI]
-    mov        dword[EDI],EAX
-    
-    inc         ESI
-    inc         EDI   ;next memory varaible in exp
-    jmp         start 
+    mov         byte[minus_sign_flag],0      
     
  entry_error:
  PutCh  'Q'
     PutStr      errormsg
+
+not_number_nor_oper:
+    PutStr      errormsg
+ is_a_number:
 
 ;xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ;xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -538,7 +566,101 @@ binary_error:
     nwln
     PutStr      bin_error_msg
     nwln
+    jmp         startCalc
+  ;----------------------------------------------------------------------
+  ;----------------------------------------------------------------------------------------
+  ;----------------------------------------------------------------------------------------
+  ;----------------------------------------------------------------------------------------
+  ;----------------------------------------------------------------------------------------
+  ;----------------------------------------------------------------------------------------
+  ;----------------------------------------------------------------------------------------
+  ;----------------------------------------------------------------------------------------
+  ;----------------------------------------------------------------------------------------
+  ;----------------------------------------------------------------------------------------
+  ;----------------------------------------------------------------------------------------
+  ; Octal
+  startCodeOct:
+    sub         EAX,EAX
+    mov         dword[resultadoTotal],EAX 
+    inc         ESI
+    mov         EBX,ESI
+    sub         ECX,ECX
+    sub         EDX,EDX
+
+reading_typeOct:
+    cmp         byte[ESI],'-'
+    je          finish_readingOct
+    cmp         byte[ESI],'+'
+    je          finish_readingOct
+    cmp         byte[ESI],'/'
+    je          finish_readingOct
+    cmp         byte[ESI],'*'
+    je          finish_readingOct
+    cmp         byte[ESI],')'
+    je          finish_readingOct
+    cmp         byte[ESI],20h
+    je          finish_readingOct
+    cmp     	byte[ESI],'='
+    je      	finish_readingOct
+
+reading_oct:
+    inc         CX
+    inc         ESI
+    jmp         reading_typeOct
+
+finish_readingOct:
+    sub         EDX,EDX
+    mov         DL,byte[EBX]
+    cmp         DX, '7'
+    jg          error_oct
+    cmp         DX, '0'
+    jl          error_oct
+    sub         EDX, '0'  
+    push        EBX
+    push        EDX      
+    push        ECX            
+    jmp         Oct_exponent
+
+oct_expo_end: 
+    pop         ECX
+    pop         EDX           
+    pop         EBX
+    mul         EDX
+    add         dword[resultadoTotal],EAX
+    inc         EBX
     
+    loop        finish_readingOct
+  
+endOct:
+    ;PutLInt      [resultadoTotal]  
+    
+    dec         ESI
+    jmp         add_exp   
+
+
+error_oct:
+    nwln
+    PutStr      errormsg
+    nwln
+    jmp endOct
+
+Oct_exponent:
+    sub         edx,edx
+    sub         ebx, ebx
+    mov         EAX,1 
+    mov         EBX,8
+    dec         CX
+    cmp         CX, 0
+    je          zeroOct
+
+procedureOct:
+    mul         EBX      
+    loop        procedureOct
+    jmp         oct_expo_end         
+
+zeroOct:
+    mov         EAX, 1
+    jmp         oct_expo_end
 
   ;----------------------------------------------------------------------------------------
   ;----------------------------------------------------------------------------------------
@@ -639,7 +761,7 @@ error_outp:
     nwln
     PutStr      errormsg
     nwln
-    jmp endHex
+    jmp         startCalc
 
 ;----------------------------------------------------------
 ;Calling Functions
@@ -889,6 +1011,7 @@ done:
     
     
     PutLInt      dword[exp]
+    ;.EXIT
     jmp         startCalc
 ;
 ;BIN---BIN-----BIN-----BIN----BIN----BIN-----BIN----BIN----
@@ -1155,6 +1278,46 @@ exit_printing_oct:
 exit:
     .EXIT
 startHelp:
+    cmp         byte[ESI+1],'a'
+    jne         endHelp
+    cmp         byte[ESI+2],'y'
+    jne         endHelp
+    cmp         byte[ESI+3],'u'
+    jne         endHelp
+    cmp         byte[ESI+4],'d'
+    jne         endHelp
+    cmp         byte[ESI+5],'a'
+    
+    
+    
+    PutStr	ayuda0
+    nwln
+    PutStr      ayuda1
+    nwln
+    PutStr	ayuda2
+    nwln
+    PutStr	ayuda3
+    nwln
+    PutStr	ayuda4
+    nwln
+    PutStr	ayuda5
+    nwln
+    PutStr	ayuda6
+    nwln
+    PutStr	ayuda7
+    nwln
+    PutStr	ayuda8
+    nwln
+    PutStr	ayuda9
+    nwln
+    PutStr	ayuda10
+    nwln
+    PutStr	ayuda11
+    nwln
+    PutStr	ayuda12
+    nwln
+endHelp:
+    .EXIT
     jmp     startCalc
 
   
