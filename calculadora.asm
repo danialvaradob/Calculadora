@@ -1,5 +1,9 @@
+;El siguiente programa es una calculadora que puedeo utilizar distintas bases y aun asi dar un resultado. En decimal o en la 
+;base deseada por el usuario
 ;
-;
+;Creado por: 
+;    Daniel Alvarado
+;    Sergio Hidalgo
 ;
 ;
 ;Maximo Bin: 2^31
@@ -13,8 +17,8 @@
 .DATA
 welcome_msg              db       "Bienvenido a la calculadora BinOctHex!",0
 input_sign               db       ">>",0
-;operation                db      "b01010+h6B*22*2 =",0
-operation               db     "10+5+o10 =o"
+;operation                db      "b01010+h6B*22*2 =",0     ;variables para prueba
+;operation               db     "10+5+o10 =o"
 ;operation                db      "#ayuda"
 result_msg               db       "El resultado es: "
 bin_error_msg            db      "Entrada binaria erronea",0
@@ -68,7 +72,7 @@ startCalc:
     PutStr      welcome_msg
     nwln
     PutStr      input_sign
-    ;GetStr      operation
+    GetStr      operation
     
     ;;;;;;;BANDERAS;;;;;;;;
     mov         byte[complement],0 ;   resetea el complemento
@@ -78,11 +82,10 @@ startCalc:
     mov         byte[banderaOct],0     ;resetea la bandera de Oct
     mov         byte[first_1_bin],0    ;bandera utilizada para el primer bit del binario, si es 1 se le aplica complemento a 2
     
-    mov         ESI,operation   ;Pointer to the start of the variable
-    mov         EDI,exp     ;Pointer to the start if the memory variable 
+    mov         ESI,operation   ;Puntero que recorre la expresion dada por el usuario
+    mov         EDI,exp         ;Puntero que recorre la expresion post fijo que se crea a traves del programa
     mov         CX,15   
-    ;mov         BX,1            ;to compare
-    cmp         byte[ESI],'#'
+    cmp         byte[ESI],'#'   
     je          startHelp
 startAll:
 
@@ -97,9 +100,9 @@ startAll:
     je          startCodeOct
     
     
-    cmp         byte[ESI],20h
-    je          stack_elements         
-    cmp         byte[ESI],'='
+    cmp         byte[ESI],20h  ;es un espacio, utilizado para saber cuando termino la expresion numerica
+    je          stack_elements          
+    cmp         byte[ESI],'='  ;el = es utilizado para saber cuando ya termino la variable
     je          stack_elements
 
 check_ch:
@@ -209,12 +212,12 @@ activar_banderaOct:
     
 
 operator_priority:
-    cmp         byte[primer_op],1
+    cmp         byte[primer_op],1           ;si es el primero operador, sin importar lo que sea lo inserta en la pila
     je          firsttime
     sub         EBX,EBX
-    pop         EBX   ;element on ToS
+    pop         EBX                         ;toma lo que esta de primero en el stack
     cmp         BL,'-'
-    je          continue_priorityToSMinPlus
+    je          continue_priorityToSMinPlus 
     cmp         BL,'+'
     je          continue_priorityToSMinPlus
     cmp         BL,'/'
@@ -222,7 +225,7 @@ operator_priority:
     cmp         BL,'*'
     je          continue_priorityToSMultDiv
     cmp         BL,'('
-    jmp         both_elements_to_stack
+    jmp         both_elements_to_stack      ; si lo que saca es un parentesis, entonces el siguiente elemento deebe de tomaro e insertarlo en la pila
     jmp         end_priority
 
 firsttime:
