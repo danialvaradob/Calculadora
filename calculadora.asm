@@ -205,9 +205,10 @@ activar_banderaOct:
                 
 ;--------------------------------------------------------------------
 ;       Funcion utilizada para comparar los operandos
+;             y saber cual agregar a la pila
 ;   
 ;--------------------------------------------------------------------    
-; byte[ESI] has the operator outside of the stack
+;
 
     
 
@@ -229,43 +230,41 @@ operator_priority:
     jmp         end_priority
 
 firsttime:
-    sub         EAX,EAX
+    sub         EAX,EAX     
     mov         AL,byte[ESI]
     push        EAX  
     inc         byte[primer_op]
     jmp         operator_priority_end
 
-continue_priorityToSMinPlus:  ;ToS is a '-'  or '+'
+continue_priorityToSMinPlus:        ;ToS es un '-'  o '+'
     cmp         byte[ESI],'('   
-    je          both_elements_to_stack
+    je          both_elements_to_stack  ;si el nuevo operando es un parentesis inserta ambos elementos
     cmp         byte[ESI],')'
-    je          right_parenthesis                          
+    je          right_parenthesis       ;se tiene que sacar todo hasta que se encuentre el parentesis izquierdo                      
     cmp         byte[ESI],'+'
-    je         newE_to_stack    ;if the new element is not a / or * is a - or +
+    je         newE_to_stack            ;si el nuevo elemento es un +
     cmp         byte[ESI],'-'
-    je         newE_to_stack    ;if the new element is not a / or * is a - or +
+    je         newE_to_stack            ;si el nuevo elemento es un -
     ;jmp         newE_to_stack         
 both_elements_to_stack:        
-    push        EBX              ;pushes the ToS back to the stack
+    push        EBX                     ;inserta (pushes) de nuevo el elemento que se habia obtenido del stack
     sub         EAX,EAX 
-    mov         AL,byte[ESI]    ;moves the '*' or '/' new element to the AL register
-    push        EAX              ;pushes to the ToS the new element    
+    mov         AL,byte[ESI]            ;mueve el '*' o '/' al AL register
+    push        EAX                     ;inserta (pushes) ese elmento en la pila    
     jmp         end_priority1               
 
-continue_priorityToSMultDiv:    ;ToS is a '*' or '/'
+continue_priorityToSMultDiv:            ;ToS es un * o /
     cmp         byte[ESI],'('   
-    je          both_elements_to_stack
+    je          both_elements_to_stack  ; parentesis izquierdo mete ambos operadores a la pila
     cmp         byte[ESI],')'
-    je          right_parenthesis                          
-    jmp         newE_to_stack    ;the new element always enters the stack and the last eleme
-                                 ;is added to the variable
+    je          right_parenthesis       ; parentesis derecho                 
+    jmp         newE_to_stack           ;el nuevo elemento siempre es agregado al stack y sacando el ultimo (que es una * o /)
+                                        
                                 
-right_parenthesis:
+right_parenthesis:                    ;ciclo que obtiene todos los operadores hasta encontrarse el (
     cmp         BL,'('
-    je          end_priority1   ;no need to save the '(' anywhere
-    mov         dword[EDI],EBX
-    ;mov         CX,4
-    ;jmp         next_dword
+    je          end_priority1         ;el ( simplemente se pierde, y ya se termina el ciclo
+    mov         dword[EDI],EBX        ;agrega los operadores a la expresion posfijo
     inc         EDI
     inc         EDI
     inc         EDI
@@ -276,19 +275,20 @@ continue_right_paren:
     
 
 
-newE_to_stack:  ;less or equal priority enters the stack and adds the last element
-                ;poped out of the stack to the variable
+newE_to_stack:                  
+                                ;con una prioridad menor o igual toma el ultimo elemento del stack y lo agrega a la variable
+                                ;y el nuevo lo mete al stack (push)
+                                
     sub         EAX,EAX       
-    mov         AL,byte[ESI]	;copies the operator in the variable (lo que digita el usuario)
+    mov         AL,byte[ESI]	   ;toma el operador dela variable  (lo que digita el usuario)
     push 	EAX
-    mov         dword[EDI],EBX   ;moves the operand taken from stack to the memory variable
+    mov         dword[EDI],EBX   ;mueve el operando tomado de la pila a la variable postfijo
     inc         EDI
     inc         EDI
     inc         EDI
     inc         EDI
 
-end_priority1: ;ends function when an '/' or '*' is the new element and the last element
-               ;is a '-' or '+'
+end_priority1: 
                
     jmp         operator_priority_end         
 
