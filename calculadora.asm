@@ -53,10 +53,10 @@ exp             resd 256 ;where the exp op will be stored
 
 complement      resb 1   ;flag
 banderaBinario  resb 1   ;si el usuario quiere el resultado en binario, se enciende 
-banderaDecimal  resb 1
-banderaHex      resb 1
-banderaOct      resb 1
-first_1_bin     resb 1
+banderaDecimal  resb 1   ;si el usuario quiere el resultado en decimal, se enciende
+banderaHex      resb 1   ;si el usuario quiere el resultado en hexadecimal, se enciende 
+banderaOct      resb 1   ;si el usuario quiere el resultado en octal, se enciende 
+first_1_bin     resb 1   
 variableBin     resd 1   ;variable utilizada para 
 minus_sign_flag resb 1   ;bandera utilizada para saber si se debe de cambiar el signo
 
@@ -71,12 +71,12 @@ startCalc:
     ;GetStr      operation
     
     ;;;;;;;BANDERAS;;;;;;;;
-    mov         byte[complement],0 ;resetea el complemento
+    mov         byte[complement],0 ;   resetea el complemento
     mov         byte[banderaBinario],0 ;resetea la bandera de binario
     mov         byte[banderaDecimal],1      ;DEFAULT
-    mov         byte[banderaHex],0
-    mov         byte[banderaOct],0
-    mov         byte[first_1_bin],0
+    mov         byte[banderaHex],0     ;resetea la bandera de Hex
+    mov         byte[banderaOct],0     ;resetea la bandera de Oct
+    mov         byte[first_1_bin],0    ;bandera utilizada para el primer bit del binario, si es 1 se le aplica complemento a 2
     
     mov         ESI,operation   ;Pointer to the start of the variable
     mov         EDI,exp     ;Pointer to the start if the memory variable 
@@ -724,7 +724,7 @@ finish_readingHex:
     jmp 	        error_outp
 
 is_letter:
-    sub         EDX, 55
+    sub         EDX, 55           ;vse le resta el valor decimal de la letra 
     jmp         mult_withInt
 
 sub_num:
