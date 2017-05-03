@@ -1019,7 +1019,7 @@ done:
     
     
     PutLInt      dword[exp]
-    ;.EXIT
+  
     jmp         startCalc
 ;
 ;BIN---BIN-----BIN-----BIN----BIN----BIN-----BIN----BIN----
