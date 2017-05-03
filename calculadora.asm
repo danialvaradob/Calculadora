@@ -399,10 +399,11 @@ condDecimal:
      cmp     byte[ESI], '0'
      jl      error_outputDecimal
      sub     byte[ESI], '0'
-     mul     EDX
+     mul     EDX              ;se multiplica por 10 para luego sumarle el digito nuevo, 15 ---> 0*10 + 1 = 1 y luego 
+                              ;                                                         1*10 + 5 = 15
      sub     ECX, ECX
      mov     CL, byte[ESI]
-     add     EAX, ECX
+     add     EAX, ECX         ;aca hace la suma, donde se va acumulando el valor decimal
      inc     ESI 
      jmp condDecimal
 
@@ -415,8 +416,8 @@ error_outputDecimal:
      jmp question
 
 doneDecimal:
-    mov         dword[resultadoTotal],EAX
-    dec         ESI
+    mov         dword[resultadoTotal],EAX  ;lo mueve a esta variable para luego ser agregado a la expresion posfijo
+    dec         ESI                        ;decremente el ESI, se devuelve un espacion en la expresion dada por el usuario
     jmp         add_exp  
     
 
@@ -443,14 +444,14 @@ doneDecimal:
 startB:
     sub         CX,CX
     inc         ESI
-    mov         EBX,ESI  ;Pointer to memory direction
+    mov         EBX,ESI         ;crea un segundo puntero a donde comienza el binario y poder obtener la cantidad de digitos
     mov         CX,CX
     mov         DX,0
     cmp         byte[ESI],'1'
     je          complemento2
 setting_counter:
     
-    cmp         byte[ESI],'-'
+    cmp         byte[ESI],'-'   
     je          finish_reading
     cmp         byte[ESI],'+'
     je          finish_reading
@@ -471,7 +472,7 @@ setting_counter:
     jl          binary_error
     ;-----
     ;-----
-    cmp         byte[complement],1
+    cmp         byte[complement],1            ;si esta encendido debe de hacersele se ignora el primer 0
     jne         continue_setting_counter
     cmp         byte[ESI],'0'
     je          change_zero
@@ -483,7 +484,7 @@ change_zero:
 
     
 continue_setting_counter:            
-    inc         CX
+    inc         CX                 ;contador que lleva la cantidad de digitos
     inc         ESI
     inc         byte[cont]
     mov         byte[resultadoTotal],0
@@ -500,21 +501,22 @@ binary_loop:
     push        EBX
     sub         DL,'0'              ;Se obtiene su valor en binario
     
-    push        EDX                  ;Mete en la pila lo que tenga AL
-                                 ;guardar la multiplicacion de la pila
+    push        EDX                  ;Mete en la pila lo que tenga EDX
+                                     ;guardar la multiplicacion de la pila
 
     push        CX                  ;guardo el contador en la pila para despues reemplazarlo
     jmp        binary_exponent
 end_exponent:    
-    pop         CX                 ;Prueba para ver que tiene CX
+    pop         CX                  ;obtiene el valor previo de CX
 
     pop        EDX                  ;se obtiene lo que se tenia guardado en AX
   
-    pop        EBX                                                             ;el resultado del exponente binario
+    pop        EBX                  ;el resultado del exponente binario
     mul        EDX                  ;si es 2^3 en el AX hay un 8 y en el byte[ESP]
                                      ;esta lo que se encuentre en esa posicion 
-    add         dword[resultadoTotal],EAX
-                                     ;mete el resultado en la pila
+    add         dword[resultadoTotal],EAX   ;va agregando el resultado a esa posicion para asi 
+                                            ;obener el resultado final de todas las sumas 
+                                     
     inc         BX                  ;el puntero pasa a la siguiente posicion
     
     loop        binary_loop
@@ -552,7 +554,7 @@ binary_exponent:
                         ;que este en 2 para que funcione el exponente
   
     
-procedure:    
+procedure:              ;este loop se utiliza para sacar el resultado del exponente
     mul         EBX
     
     loop        procedure
@@ -807,7 +809,7 @@ hexadecimal_error2:
  startEval:
  
     
- 
+    ;se limpian todos los registros
     sub         EBX,EBX
     sub         EDX,EDX
     sub         ECX,ECX
@@ -815,14 +817,17 @@ hexadecimal_error2:
     sub         ESI,ESI
     sub         EDI,EDI
     
-    mov         ESI,exp ;Pointer to the start of the variable
+    mov         ESI,exp ;Puntero donde comienza la variable
     
 start:
-    sub 	EAX, EAX
+    sub 	       EAX, EAX
 
     mov         EAX,dword[ESI]	;En en EAX queda el valor a comparar
-    cmp 	EAX,'!'
-    je 		done
+    ;
+    ;se determina que operacion se debe de hacer
+    ;
+    cmp 	      EAX,'!'
+    je 		      done
     cmp         EAX,'+'
     je          is_sum
     cmp         EAX,'-'
@@ -831,181 +836,181 @@ start:
     je          is_mul
     cmp         EAX,'/'
     je          is_div
-    inc 	ESI
-    inc ESI
-    inc ESI
-    inc ESI
-    jmp    	start
+    inc 	      ESI
+    inc         ESI
+    inc         ESI
+    inc         ESI
+    jmp    	    start
 
 is_sum: 
-    dec 	ESI
-    dec 	ESI
-    dec 	ESI
-    dec 	ESI			;Por ejemplo,en la postfijo 34+, hay que posicionarse en el 4.
+    dec 	      ESI
+    dec 	      ESI
+    dec         ESI
+    dec         ESI			            ;Por ejemplo,en la postfijo 34+, hay que posicionarse en el 4.
     mov         EDX, dword[ESI]    	;Copia el 4 al EDX
-    dec 	ESI
-    dec 	ESI
-    dec 	ESI
-    dec		ESI			;Se posiciona en el 3 y lo copia al EAX
+    dec         ESI
+    dec         ESI
+    dec         ESI
+    dec         ESI			            ;Se posiciona en el 3 y lo copia al EAX
     mov         EAX, dword[ESI]    
-    PutLInt 	EAX
-    PutCh	'+'
-    PutLInt 	EDX
+    PutLInt 	  EAX
+    PutCh	      '+'
+    PutLInt 	  EDX
     nwln
     add         EAX, EDX      		;hace la suma
-    mov         [ESI], EAX		;guarda el resulado en la posicion del 3
-					;despues de hacer eso, el 4 y el + son inservibles,
-					;entonces, la idea es mover todo lo que
-					;esta despues del +, dos espacios para atras.
-					;Por ejemplo, que despues del + haya 5- (34+5-). Mueve el 5 donde esta el 4 
-					;y el - donde esta el +
-    jmp 	rotateLeft
+    mov         [ESI], EAX		    ;guarda el resulado en la posicion del 3
+					                        ;despues de hacer eso, el 4 y el + son inservibles,
+		                        			;entonces, la idea es mover todo lo que
+					                        ;esta despues del +, dos espacios para atras.
+					                        ;Por ejemplo, que despues del + haya 5- (34+5-). Mueve el 5 donde esta el 4 
+					                        ;y el - donde esta el +
+    jmp 	      rotateLeft
 
 is_sub:
-    dec 	ESI
-    dec 	ESI
-    dec 	ESI
-    dec 	ESI			;Por ejemplo,en la postfijo 34+, hay que posicionarse en el 4.
+    dec         ESI
+    dec         ESI
+    dec         ESI
+    dec         ESI			;Por ejemplo,en la postfijo 34+, hay que posicionarse en el 4.
     mov         EDX, dword[ESI]    	;Copia el 4 al EDX
-    dec 	ESI
-    dec 	ESI
-    dec 	ESI
-    dec		ESI			;Se posiciona en el 3 y lo copia al EAX
+    dec 	      ESI
+    dec         ESI
+    dec         ESI
+    dec	        ESI			;Se posiciona en el 3 y lo copia al EAX
     mov         EAX, dword[ESI]    
-    PutLInt 	EAX
-    PutCh	'-'
-    PutLInt 	EDX
+    PutLInt     EAX
+    PutCh	      '-'
+    PutLInt 	  EDX
     nwln
     sub         EAX, EDX      		;hace la suma
-    mov         [ESI], EAX		;guarda el resulado en la posicion del 3
-					;despues de hacer eso, el 4 y el + son inservibles,
-					;entonces, la idea es mover todo lo que
-					;esta despues del +, dos espacios para atras.
-					;Por ejemplo, que despues del + haya 5- (34+5-). Mueve el 5 donde esta el 4 
-					;y el - donde esta el +
+    mov         [ESI], EAX		    ;guarda el resulado en la posicion del 3
+					                        ;despues de hacer eso, el 4 y el + son inservibles,
+			                         		;entonces, la idea es mover todo lo que
+					                        ;esta despues del +, dos espacios para atras.
+				                        	;Por ejemplo, que despues del + haya 5- (34+5-). Mueve el 5 donde esta el 4 
+				                        	;y el - donde esta el +
     jmp 	rotateLeft
 
 is_mul:
-    sub 	EDX, EDX
-    dec 	ESI
-    dec 	ESI
-    dec 	ESI
-    dec 	ESI			;Por ejemplo,en la postfijo 34+, hay que posicionarse en el 4.
+    sub         EDX, EDX
+    dec         ESI
+    dec         ESI
+    dec         ESI
+    dec         ESI			;Por ejemplo,en la postfijo 34+, hay que posicionarse en el 4.
     mov         ECX, dword[ESI]    	;Copia el 4 al EDX
-    dec 	ESI
-    dec 	ESI
-    dec 	ESI
-    dec		ESI			;Se posiciona en el 3 y lo copia al EAX
+    dec         ESI
+    dec         ESI
+    dec         ESI
+    dec	        ESI			;Se posiciona en el 3 y lo copia al EAX
     mov         EAX, dword[ESI]
-    test   	ECX, 80000000h
-    jnz 	num1_is_neg
-    test 	EAX, 80000000h
+    test    	  ECX, 80000000h
+    jnz         num1_is_neg
+    test        EAX, 80000000h
     jnz         mul_is_negative
-    jmp 	mul_is_positive
+    jmp 	      mul_is_positive
 
 num1_is_neg:
-    test 	EAX, 80000000h
+    test    	  EAX, 80000000h
     jz          mul_is_negative
-    not 	ECX
-    inc 	ECX
-    not 	EAX
-    inc 	EAX
-    jmp 	mul_is_positive
+    not         ECX
+    inc         ECX
+    not 	      EAX
+    inc 	      EAX
+    jmp 	      mul_is_positive
 
 mul_is_negative: 
-    PutLInt 	EAX
-    PutCh	'*'
-    PutLInt 	ECX 
+    PutLInt 	  EAX
+    PutCh	      '*'
+    PutLInt 	  ECX 
     nwln 
-    mul		ECX			;Hace la multiplicacion, si queda el overflow en el EDX, manda un msj y termina
-    cmp 	EAX, 0
-    jg 		overflow_mul
+    mul	    	  ECX			;Hace la multiplicacion, si queda el overflow en el EDX, manda un msj y termina
+    cmp 	      EAX, 0
+    jg 		      overflow_mul
     mov         [ESI], EAX
     		
-    jmp  	rotateLeft
+    jmp  	      rotateLeft
 
 mul_is_positive:
-    PutLInt 	EAX
-    PutCh	'*'
-    PutLInt 	ECX 
+    PutLInt 	  EAX
+    PutCh	      '*'
+    PutLInt 	  ECX 
     nwln 
-    mul		ECX			;Hace la multiplicacion, si queda el overflow en el EDX, manda un msj y termina
+    mul		      ECX			;Hace la multiplicacion, si queda el overflow en el EDX, manda un msj y termina
 
-    test	EDX, 4294967295
-    jnz		overflow_mul
-    test 	EAX, 80000000h
-    jnz 	overflow_mul
+    test	       EDX, 4294967295
+    jnz		       overflow_mul
+    test 	       EAX, 80000000h
+    jnz 	       overflow_mul
     mov         [ESI], EAX		
-    jmp  	rotateLeft
+    jmp  	       rotateLeft
 
 is_div:
-    sub 	EDX, EDX
-    dec 	ESI
-    dec 	ESI
-    dec 	ESI
-    dec 	ESI			;Por ejemplo,en la postfijo 34+, hay que posicionarse en el 4.
-    mov         ECX, dword[ESI]    	;Copia el 4 al EDX
-    dec 	ESI
-    dec 	ESI
-    dec 	ESI
-    dec		ESI			;Se posiciona en el 3 y lo copia al EAX
-    mov         EAX, dword[ESI]
-    test   	ECX, 80000000h
-    jnz 	div_num_is_neg
-    jmp 	apply_div
+    sub 	       EDX, EDX
+    dec 	       ESI
+    dec 	       ESI
+    dec        	 ESI
+    dec 	       ESI			;Por ejemplo,en la postfijo 34+, hay que posicionarse en el 4.
+    mov          ECX, dword[ESI]    	;Copia el 4 al EDX
+    dec 	       ESI
+    dec 	       ESI
+    dec 	       ESI
+    dec		       ESI			;Se posiciona en el 3 y lo copia al EAX
+    mov          EAX, dword[ESI]
+    test   	     ECX, 80000000h
+    jnz 	       div_num_is_neg
+    jmp 	       apply_div
 
 div_num_is_neg:
-    test 	EAX, 80000000h
+    test 	      EAX, 80000000h
     jz          apply_div
-    not 	ECX
-    inc 	ECX
-    not 	EAX
-    inc 	EAX
-    jmp 	apply_div
+    not         ECX
+    inc 	      ECX
+    not 	      EAX
+    inc         EAX
+    jmp         apply_div
 
 apply_div:
-    PutLInt 	EAX
-    PutCh	'/'
-    PutLInt 	EDX 
+    PutLInt 	 EAX
+    PutCh	     '/'
+    PutLInt 	 EDX 
     nwln 
-    div		ECX			;Hace la multiplicacion, si queda el overflow en el EDX, manda un msj y termina
-    mov         [ESI], EAX		
-    jmp  	rotateLeft
+    div		     ECX			;Hace la multiplicacion, si queda el overflow en el EDX, manda un msj y termina
+    mov        [ESI], EAX		
+    jmp  	     rotateLeft
 
 rotateLeft:
-    inc   	ESI
-    inc   	ESI
-    inc   	ESI
-    inc   	ESI
-    mov         EBX, ESI
-    inc 	EBX
-    inc		EBX
-    inc   	EBX
-    inc   	EBX
-    inc   	EBX
-    inc   	EBX
-    inc   	EBX
-    inc   	EBX
-    mov 	EAX, [EBX]
-    mov         [ESI], EAX	;esa nueva posicion recibe el valor que tiene dos doubles por delante
-    cmp		byte[EBX], '!'
-    je		reset
+    inc        ESI
+    inc   	   ESI
+    inc   	   ESI
+    inc   	   ESI
+    mov        EBX, ESI
+    inc 	     EBX
+    inc		     EBX
+    inc   	   EBX
+    inc   	   EBX
+    inc   	   EBX
+    inc   	   EBX
+    inc   	   EBX
+    inc   	   EBX
+    mov 	     EAX, [EBX]
+    mov        [ESI], EAX	;esa nueva posicion recibe el valor que tiene dos doubles por delante
+    cmp		     byte[EBX], '!'
+    je		     reset
 
  
-    jmp		rotateLeft  
+    jmp		     rotateLeft  
 
 reset:
-    mov 	ESI, exp
-    jmp 	start
+    mov 	     ESI, exp
+    jmp 	     start
     
 overflow_mul:
-    PutStr	overflow_error_mul
+    PutStr	   overflow_error_mul
     nwln
-    jmp		exit
+    jmp		     exit
 
 done:
     nwln
-    cmp          byte[banderaBinario],1
+    cmp         byte[banderaBinario],1    ;Saltos dependiendo de la representacion que quiera el usuario
     je          read_charBin
     cmp         byte[banderaHex],1
     je          read_charHex
