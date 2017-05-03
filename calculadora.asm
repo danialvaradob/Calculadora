@@ -1,4 +1,4 @@
-;El siguiente programa es una calculadora que puede utilizar distintas bases y el resultado correcto, en decimal o en la 
+;El siguiente programa es una calculadora que puede utilizar distintas bases y dar el resultado correcto, en decimal o en la 
 ;base deseada por el usuario
 ;
 ;Creado por: 
@@ -543,7 +543,7 @@ binary_exponent:
     mov         EBX,2  ;2 mueve un 2 al DL ya que es un binary, si fuese hex seria un 16
     cmp         CX,1    ;si el contador es 1, salta a para retorna como resultado 1
     je         zero
-    dec         CX      ;CX contiene la cantidad de digitos del numero, para acceder a la posicion de decrementa 1
+    dec         CX      ;CX contiene la cantidad de digitos del numero, para acceder a la posicion se decrementa 1
   
     
 procedure:              ;este loop se utiliza para sacar el resultado del exponente
@@ -888,7 +888,7 @@ is_mul:
     dec         ESI
     dec	        ESI			
     mov         EAX, dword[ESI]		;saca los dos valores antes del operador
-    test    	  ECX, 80000000h	;revisa si son numero regativos con una mascara
+    test    	  ECX, 80000000h	;revisa si son numeros regativos con una mascara
     jnz         num1_is_neg		;si el resultado da cero, el numero es positivo, de lo contrario es negativo
     test        EAX, 80000000h		;si solo el segundo es negativo, la operacion es negativa
     jnz         mul_is_negative
@@ -924,7 +924,7 @@ mul_is_positive:
 
     test	       EDX, 4294967295 		;mascara FFFFFFFFh
     jnz		       overflow_mul		;si es 0, no hay overflow
-    test 	       EAX, 80000000h		;si en el EAX, el bit más significativo está encendido el hay overflow
+    test 	       EAX, 80000000h		;si en el EAX el bit más significativo está encendido, hay overflow
     jnz 	       overflow_mul
     mov         [ESI], EAX		
     jmp  	       rotateLeft
@@ -963,7 +963,7 @@ apply_div:
     mov        [ESI], EAX		
     jmp  	     rotateLeft
 
-rotateLeft:    ;Funcion que mueve los operadores y operandos dos espacios atras, despues de hacer un operación
+rotateLeft:    ;Funcion que mueve los operadores y operandos dos espacios atras, despues de hacer una operación
     inc        ESI
     inc   	   ESI
     inc   	   ESI
@@ -1005,7 +1005,6 @@ done:
     
     
     PutLInt      dword[exp]
-    ;.EXIT
     jmp         startCalc
 ;
 ;BIN---BIN-----BIN-----BIN----BIN----BIN-----BIN----BIN----
