@@ -1,4 +1,4 @@
-;El siguiente programa es una calculadora que puedeo utilizar distintas bases y aun asi dar un resultado. En decimal o en la 
+;El siguiente programa es una calculadora que puede utilizar distintas bases y el resultado correcto, en decimal o en la 
 ;base deseada por el usuario
 ;
 ;Creado por: 
@@ -6,9 +6,7 @@
 ;    Sergio Hidalgo
 ;
 ;
-;Maximo Bin: 2^31
-;Maximo Hex: 16^8
-;Maximo Oct: 
+;
 ;
 ;
 
@@ -61,7 +59,6 @@ banderaDecimal  resb 1   ;si el usuario quiere el resultado en decimal, se encie
 banderaHex      resb 1   ;si el usuario quiere el resultado en hexadecimal, se enciende 
 banderaOct      resb 1   ;si el usuario quiere el resultado en octal, se enciende 
 first_1_bin     resb 1   
-variableBin     resd 1   ;variable utilizada para 
 minus_sign_flag resb 1   ;bandera utilizada para saber si se debe de cambiar el signo
 
 .CODE
@@ -122,7 +119,7 @@ operator_priority_end:
       
 
 ch_number:
-    cmp         byte[ESI],'9'
+    cmp         byte[ESI],'9' 	;No hubo letra alguna, si es un numero, procede a leer ese numero como un decimal
     jg          not_number
     jmp         readingDecimal
 
@@ -133,20 +130,18 @@ add_exp:
     sub         ECX,ECX
     sub         EBX,EBX
 
-    mov        EAX,dword[resultadoTotal] 
-    mov        dword[EDI],EAX  
+    mov        EAX,dword[resultadoTotal] ;resultadoTotal contiene el resultado de las conversiones a las diferentes bases u operandos
+    mov        dword[EDI],EAX  		 ;se guardan en la lista postfijo siguiendo el orden de prioridades de los operadores
     inc         ESI  
-    inc         EDI   ;next memory varaible in exp
+    inc         EDI   
     inc         EDI
     inc         EDI
-    inc         EDI
+    inc         EDI			 ;se posiciona en el siguiente double de la variable postfijo
     jmp         startAll
         
 
 
-    ; al terminar la operacion tiene que ir sacando todo lo de la pila y resolver
-
-stack_elements:  ;Elementos que quedaron en el stack
+stack_elements:  ;Operadores que quedaron en el stack
     sub		EBX,EBX	
     pop	        EBX      ;element ToS
     cmp          BL,'+'
@@ -167,10 +162,8 @@ add_operator:
     inc         EDI
     jmp         stack_elements
 
-endCode:
-    mov     dword[EDI],'!'
-
-;print_variable:
+endCode: 			  ;terminó de mover los operadores que quedaron en la pila a la variable postfijo
+    mov     dword[EDI],2147483647 ;condición de salida a la hora de evaluar la expresión postfijo
 
     cmp     byte[ESI + 2],'b'
     je      activar_banderaBin
@@ -226,7 +219,7 @@ operator_priority:
     cmp         BL,'*'
     je          continue_priorityToSMultDiv
     cmp         BL,'('
-    jmp         both_elements_to_stack      ; si lo que saca es un parentesis, entonces el siguiente elemento deebe de tomaro e insertarlo en la pila
+    jmp         both_elements_to_stack      ; si lo que saca es un parentesis, entonces el siguiente elemento debe de tomaro e insertarlo en la pila
     jmp         end_priority
 
 firsttime:
@@ -249,7 +242,7 @@ continue_priorityToSMinPlus:        ;ToS es un '-'  o '+'
 both_elements_to_stack:        
     push        EBX                     ;inserta (pushes) de nuevo el elemento que se habia obtenido del stack
     sub         EAX,EAX 
-    mov         AL,byte[ESI]            ;mueve el '*' o '/' al AL register
+    mov         AL,byte[ESI]            ;mueve el '*' o '/' al registro AL 
     push        EAX                     ;inserta (pushes) ese elmento en la pila    
     jmp         end_priority1               
 
@@ -417,7 +410,7 @@ error_outputDecimal:
 
 doneDecimal:
     mov         dword[resultadoTotal],EAX  ;lo mueve a esta variable para luego ser agregado a la expresion posfijo
-    dec         ESI                        ;decremente el ESI, se devuelve un espacion en la expresion dada por el usuario
+    dec         ESI                        ;decrementa el ESI, se devuelve un espacio en la expresion dada por el usuario
     jmp         add_exp  
     
 
@@ -447,7 +440,8 @@ startB:
     mov         EBX,ESI         ;crea un segundo puntero a donde comienza el binario y poder obtener la cantidad de digitos
     mov         CX,CX
     mov         DX,0
-    cmp         byte[ESI],'1'
+    cmp         byte[ESI],'1'   ;si el primer bit que encuentra en el stirng es un 1
+				;se debe aplicar complemento a 2 al numero binario
     je          complemento2
 setting_counter:
     
@@ -472,8 +466,8 @@ setting_counter:
     jl          binary_error
     ;-----
     ;-----
-    cmp         byte[complement],1            ;si esta encendido debe de hacersele se ignora el primer 0
-    jne         continue_setting_counter
+    cmp         byte[complement],1            ;si esta encendido empieza a invertir los digitos para el complemento, 1's por 0's y viceversa
+    jne         continue_setting_counter      ;si esta apagado, sigue contando los bits normalmente
     cmp         byte[ESI],'0'
     je          change_zero
     dec         byte[ESI]
@@ -501,7 +495,7 @@ binary_loop:
     push        EBX
     sub         DL,'0'              ;Se obtiene su valor en binario
     
-    push        EDX                  ;Mete en la pila lo que tenga EDX
+    push        EDX                  ;Mete en la pila lo que tenga EDX (nuevo valor binario)
                                      ;guardar la multiplicacion de la pila
 
     push        CX                  ;guardo el contador en la pila para despues reemplazarlo
@@ -510,10 +504,9 @@ end_exponent:
     pop         CX                  ;obtiene el valor previo de CX
 
     pop        EDX                  ;se obtiene lo que se tenia guardado en AX
-  
-    pop        EBX                  ;el resultado del exponente binario
-    mul        EDX                  ;si es 2^3 en el AX hay un 8 y en el byte[ESP]
-                                     ;esta lo que se encuentre en esa posicion 
+    pop        EBX     		    ;posicion del puntero en el string
+    			            ;el resultado del exponente binario
+    mul        EDX                  ;si es 2^3 en el AX hay un 8 y en el EDX esta el digito a multiplicar por la posicion
     add         dword[resultadoTotal],EAX   ;va agregando el resultado a esa posicion para asi 
                                             ;obener el resultado final de todas las sumas 
                                      
@@ -522,10 +515,10 @@ end_exponent:
     loop        binary_loop
     
 endB:
-    cmp         byte[complement],0
-    je          terminarB
-    inc         dword[resultadoTotal]
-    not         dword[resultadoTotal]
+    cmp         byte[complement],0 	;si no tiene encendida la bandera de complemento
+    je          terminarB		;terminó de leer el número binario
+    inc         dword[resultadoTotal]   ;de lo contrario, le incrementa (2do paso de la codificacion a complemento)
+    not         dword[resultadoTotal]   ;y se convierte nuevamente a un numero negativo aplicando complemento
     inc         dword[resultadoTotal]
     
 terminarB:
@@ -534,7 +527,7 @@ terminarB:
     jmp         add_exp         
 
 complemento2:
-    mov         byte[complement],1
+    mov         byte[complement],1 	;se enciende la bandera que indica si se debe realizar el complemento
     jmp         setting_counter        
  
 
@@ -546,12 +539,11 @@ complemento2:
 binary_exponent:
     sub         edx,edx
     sub         ebx, ebx
-    mov         EAX,1    ;2 simplemente mueve un 2 al AX
+    mov         EAX,1    ;1 simplemente mueve un 1 al AX
     mov         EBX,2  ;2 mueve un 2 al DL ya que es un binary, si fuese hex seria un 16
     cmp         CX,1    ;si el contador es 1, salta a para retorna como resultado 1
     je         zero
-    dec         CX      ;En este momento el contador esta en 4, pero se requiere
-                        ;que este en 2 para que funcione el exponente
+    dec         CX      ;CX contiene la cantidad de digitos del numero, para acceder a la posicion de decrementa 1
   
     
 procedure:              ;este loop se utiliza para sacar el resultado del exponente
@@ -616,22 +608,22 @@ reading_oct:
 finish_readingOct:
     sub         EDX,EDX
     mov         DL,byte[EBX]
-    cmp         DX, '7'
-    jg          error_oct
+    cmp         DX, '7'		;revisa que digito hay en el string a la hora de leer un numero octal
+    jg          error_oct	;si es mayor que 7 o menor que 0, no es número octal
     cmp         DX, '0'
     jl          error_oct
-    sub         EDX, '0'  
-    push        EBX
-    push        EDX      
-    push        ECX            
-    jmp         Oct_exponent
+    sub         EDX, '0'  	;si lo que encuentra está entre 0 y 7, obtiene su valor 
+    push        EBX		;inserta el puntero a la pila;
+    push        EDX      	;inserta el valor del caractér a la pila
+    push        ECX             ;y el contador de los digitos del numero
+    jmp         Oct_exponent	;se procede a sacar el exponente de la posicion del numero
 
 oct_expo_end: 
-    pop         ECX
+    pop         ECX		;saca los valores de la pila recientemente agregados, en orden
     pop         EDX           
     pop         EBX
-    mul         EDX
-    add         dword[resultadoTotal],EAX
+    mul         EDX 		;multiplica el exponente obtenido en Oct_exponent por el valor del digito
+    add         dword[resultadoTotal],EAX 	;se suma en la variable para luego insertar el resultado a la expresion postfijo
     inc         EBX
     
     loop        finish_readingOct
@@ -649,7 +641,7 @@ error_oct:
     nwln
     jmp endOct
 
-Oct_exponent:
+Oct_exponent: 	;Saca el exponente de un numero octal de acuerdo con su posicion 
     sub         edx,edx
     sub         ebx, ebx
     mov         EAX,1 
@@ -718,39 +710,37 @@ reading_hex:
 finish_readingHex:
     sub         EDX,EDX
     mov         DL,byte[EBX]
-    cmp         DX, 'F'
-    jg          error_outp
+    cmp         DX, 'F'		;revisa que digito hay en el string a la hora de leer un hexadecimal
+    jg          error_outp	;si es mayor que F, menor que A, mayor que 9 o menor que 0, no es un valor hexadecimal
     cmp         DX, 'A'
-    jge         is_letter
+    jge         is_letter	;si es una letra, hace una conversion
     cmp         DX, '9'
     jg          error_outp
     cmp         DX, '0'
-    jge         sub_num
-    jmp 	        error_outp
+    jge         sub_num		;si es un numero, hace otra conversion
+    jmp 	error_outp
 
 is_letter:
-    sub         EDX, 55           ;vse le resta el valor decimal de la letra 
+    sub         EDX, 55           ;le resta el valor decimal del valor de la letra 'A' en el codigo ASCII 
     jmp         mult_withInt
 
 sub_num:
-    sub         EDX, '0'
+    sub         EDX, '0'	  ;le resta el valor '0' al EDX para obtener su valor real
 
 mult_withInt:   
-    push        EBX
-    push        EDX                  ;Mete en la pila lo que tenga AL
-                                    ;guardar la multiplicacion de la pila
+    push        EBX		;inserta el puntero a la pila,
+    push        EDX             ;inserta el valor del caractér a la pila
 
-    push        ECX                  ;guardo el contador en la pila para despues reemplazarlo
+    push        ECX             ;y el contador de los digitos del número para hacer un loop
     jmp         Hex_exponent
 hex_expo_end:
     
-    pop         ECX
-    pop         EDX                  ;se obtiene lo que se tenia guardado en AX
+    pop         ECX		;saca los valores de la pila recientemente agregados, en orden
+    pop         EDX                  
     pop         EBX
-    mul         EDX                  ;si es 2^3 en el AX hay un 8 y en el byte[ESP]
-                                    ;esta lo que se encuentre en esa posicion 
+    mul         EDX             ;multiplica el exponente obtenido en Hex_exponent por el valor del digito
     
-    add         dword[resultadoTotal],EAX
+    add         dword[resultadoTotal],EAX 	;se suma para guardar el resultado de la conversion
     inc         EBX                  ;el puntero pasa a la siguiente posicion
     
     loop        finish_readingHex
@@ -772,12 +762,12 @@ error_outp:
 ;Calling Functions
 ;----------------------------------------------------------
  
-Hex_exponent:
+Hex_exponent: 	;Funcion que obtiene el exponente de un número hexadecimal utilizando su posicion
     sub         edx,edx
     sub         ebx, ebx
     mov         EAX,1 
     mov         EBX,16
-    dec         CX ;En este momento el contador esta en 4, pero se requiere
+    dec         CX 
     cmp         CX, 0
     je          zeroHex
 
@@ -824,9 +814,9 @@ start:
 
     mov         EAX,dword[ESI]	;En en EAX queda el valor a comparar
     ;
-    ;se determina que operacion se debe de hacer
+    ;se posiciona en el primer operador que encuentre para determinar que operacion se debe de hacer primero
     ;
-    cmp 	      EAX,'!'
+    cmp 	      EAX,2147483647
     je 		      done
     cmp         EAX,'+'
     je          is_sum
@@ -842,76 +832,72 @@ start:
     inc         ESI
     jmp    	    start
 
-is_sum: 
-    dec 	      ESI
-    dec 	      ESI
+is_sum: 				;si entró aqui, se sabe que el operador es un '+', entonces debemos sacar
+					;los dos operandos antes del operador y aplicarles la operación
+    dec 	ESI
+    dec 	ESI
     dec         ESI
-    dec         ESI			            ;Por ejemplo,en la postfijo 34+, hay que posicionarse en el 4.
-    mov         EDX, dword[ESI]    	;Copia el 4 al EDX
+    dec         ESI			;Por ejemplo,en la postfijo encuentra un 34+, entonces se posiciona en 4
+    mov         EDX, dword[ESI]    	;y lo copia al EDX
     dec         ESI
     dec         ESI
     dec         ESI
-    dec         ESI			            ;Se posiciona en el 3 y lo copia al EAX
+    dec         ESI			 ;lo mismo con el otro operando, se posiciona en el 3 y lo copia al EAX
     mov         EAX, dword[ESI]    
     PutLInt 	  EAX
     PutCh	      '+'
     PutLInt 	  EDX
     nwln
-    add         EAX, EDX      		;hace la suma
-    mov         [ESI], EAX		    ;guarda el resulado en la posicion del 3
-					                        ;despues de hacer eso, el 4 y el + son inservibles,
-		                        			;entonces, la idea es mover todo lo que
-					                        ;esta despues del +, dos espacios para atras.
-					                        ;Por ejemplo, que despues del + haya 5- (34+5-). Mueve el 5 donde esta el 4 
-					                        ;y el - donde esta el +
+    add         EAX, EDX      		;realiza la suma del primer operando (3) con el segundo (4)
+    mov         [ESI], EAX		;guarda el resulado en la posicion del 3
+					;despues de hacer eso, el 4 y el + son inservibles,
+		                        ;entonces, se debe hacer un corrimiento de todos los valores
+					;que se encuentran despues del +, dos espacios hacia atras.
+					;Por ejemplo, que despues del 34+ haya 5- (34+5-). Se mueve el 5 donde esta el 4 
+					;y el - donde esta el +
     jmp 	      rotateLeft
 
 is_sub:
     dec         ESI
     dec         ESI
     dec         ESI
-    dec         ESI			;Por ejemplo,en la postfijo 34+, hay que posicionarse en el 4.
-    mov         EDX, dword[ESI]    	;Copia el 4 al EDX
-    dec 	      ESI
+    dec         ESI			
+    mov         EDX, dword[ESI]    	
+    dec 	ESI
     dec         ESI
     dec         ESI
-    dec	        ESI			;Se posiciona en el 3 y lo copia al EAX
+    dec	        ESI			
     mov         EAX, dword[ESI]    
     PutLInt     EAX
     PutCh	      '-'
     PutLInt 	  EDX
     nwln
-    sub         EAX, EDX      		;hace la suma
-    mov         [ESI], EAX		    ;guarda el resulado en la posicion del 3
-					                        ;despues de hacer eso, el 4 y el + son inservibles,
-			                         		;entonces, la idea es mover todo lo que
-					                        ;esta despues del +, dos espacios para atras.
-				                        	;Por ejemplo, que despues del + haya 5- (34+5-). Mueve el 5 donde esta el 4 
-				                        	;y el - donde esta el +
-    jmp 	rotateLeft
+    sub         EAX, EDX      		;saca los dos valores antes del operador y los resta
+    mov         [ESI], EAX		;guarda el resulado en la posicion del ESI actual (ultimo operando visitado)
+    jmp 	rotateLeft		;una vez que guarda el resultado hace el corrimiento de la expresion postfijo explicado en la suma
 
 is_mul:
     sub         EDX, EDX
     dec         ESI
     dec         ESI
     dec         ESI
-    dec         ESI			;Por ejemplo,en la postfijo 34+, hay que posicionarse en el 4.
-    mov         ECX, dword[ESI]    	;Copia el 4 al EDX
+    dec         ESI			
+    mov         ECX, dword[ESI]    	
     dec         ESI
     dec         ESI
     dec         ESI
-    dec	        ESI			;Se posiciona en el 3 y lo copia al EAX
-    mov         EAX, dword[ESI]
-    test    	  ECX, 80000000h
-    jnz         num1_is_neg
-    test        EAX, 80000000h
+    dec	        ESI			
+    mov         EAX, dword[ESI]		;saca los dos valores antes del operador
+    test    	  ECX, 80000000h	;revisa si son numero regativos con una mascara
+    jnz         num1_is_neg		;si el resultado da cero, el numero es positivo, de lo contrario es negativo
+    test        EAX, 80000000h		;si solo el segundo es negativo, la operacion es negativa
     jnz         mul_is_negative
-    jmp 	      mul_is_positive
+    jmp 	mul_is_positive
 
 num1_is_neg:
-    test    	  EAX, 80000000h
+    test    	  EAX, 80000000h 	;si el segundo numero es positivo, la operacion es negativa (- x + = -)
     jz          mul_is_negative
-    not         ECX
+    not         ECX 			;si ambos numeros son negativos, hay que hacerlos positivos y operarlos
     inc         ECX
     not 	      EAX
     inc 	      EAX
@@ -936,9 +922,9 @@ mul_is_positive:
     nwln 
     mul		      ECX			;Hace la multiplicacion, si queda el overflow en el EDX, manda un msj y termina
 
-    test	       EDX, 4294967295
-    jnz		       overflow_mul
-    test 	       EAX, 80000000h
+    test	       EDX, 4294967295 		;mascara FFFFFFFFh
+    jnz		       overflow_mul		;si es 0, no hay overflow
+    test 	       EAX, 80000000h		;si en el EAX, el bit más significativo está encendido el hay overflow
     jnz 	       overflow_mul
     mov         [ESI], EAX		
     jmp  	       rotateLeft
@@ -948,23 +934,23 @@ is_div:
     dec 	       ESI
     dec 	       ESI
     dec        	 ESI
-    dec 	       ESI			;Por ejemplo,en la postfijo 34+, hay que posicionarse en el 4.
-    mov          ECX, dword[ESI]    	;Copia el 4 al EDX
+    dec 	       ESI			
+    mov          ECX, dword[ESI]    	
     dec 	       ESI
     dec 	       ESI
     dec 	       ESI
-    dec		       ESI			;Se posiciona en el 3 y lo copia al EAX
-    mov          EAX, dword[ESI]
-    test   	     ECX, 80000000h
-    jnz 	       div_num_is_neg
+    dec		       ESI			
+    mov          EAX, dword[ESI] 	
+    test   	     ECX, 80000000h	;revisa si el primer numero es negativo
+    jnz 	       div_num_is_neg   ;si no da cero, es negativo
     jmp 	       apply_div
 
 div_num_is_neg:
-    test 	      EAX, 80000000h
+    test 	      EAX, 80000000h	;si el segundo tambien es negativo
     jz          apply_div
-    not         ECX
-    inc 	      ECX
-    not 	      EAX
+    not         ECX			;los convierte a positivos
+    inc 	ECX
+    not		EAX
     inc         EAX
     jmp         apply_div
 
@@ -973,11 +959,11 @@ apply_div:
     PutCh	     '/'
     PutLInt 	 EDX 
     nwln 
-    div		     ECX			;Hace la multiplicacion, si queda el overflow en el EDX, manda un msj y termina
+    div		     ECX		;Realiza la division entre el EAX y el EXC
     mov        [ESI], EAX		
     jmp  	     rotateLeft
 
-rotateLeft:
+rotateLeft:    ;Funcion que mueve los operadores y operandos dos espacios atras, despues de hacer un operación
     inc        ESI
     inc   	   ESI
     inc   	   ESI
@@ -993,7 +979,7 @@ rotateLeft:
     inc   	   EBX
     mov 	     EAX, [EBX]
     mov        [ESI], EAX	;esa nueva posicion recibe el valor que tiene dos doubles por delante
-    cmp		     byte[EBX], '!'
+    cmp		     dword[EBX],2147483647
     je		     reset
 
  
@@ -1019,7 +1005,7 @@ done:
     
     
     PutLInt      dword[exp]
-  
+    ;.EXIT
     jmp         startCalc
 ;
 ;BIN---BIN-----BIN-----BIN----BIN----BIN-----BIN----BIN----
@@ -1090,8 +1076,8 @@ print_bin_complement:
 
 read_charHex:
      mov     EAX, [exp]
-     shr     EAX, 28        ; move upper 4 bits to lower half
-     mov     CX,8         ; loop count - 2 hex digits to print
+     shr     EAX, 28        	;mueve los 4 bits mas significativos a la mitad menor
+     mov     CX,8           	;contador para el ciclo - 8 digitos hexadecimales a imprimir
 print_digitHex:
      test    AL, 1111b
      jz      byte_is_zeroHex
@@ -1103,20 +1089,21 @@ byte_is_zeroHex:
 
 byte_not_zeroHex:
      inc     byte[byteVar]
-     cmp     AL,9         ; if greater than 9
-     jg      A_to_FHex       ; convert to A through F digits
-     add     AL,'0'       ; otherwise, convert to 0 through 9
+     cmp     AL,9 		;si el valor de los 4 bits es mayor que 9
+     jg      A_to_FHex       	;se convierte a letras
+     add     AL,'0'       	;si no, se convierte en su caractér numérico correspondiente
      jmp     skipHex
 
 A_to_FHex:
-     add     AL,'A'-10    ; subtract 10 and add 'A'
-                          ; to convert to A through F
+     add     AL,'A'-10    ; resta 10 y añade 'A'
 skipHex:
-     PutCh   AL           ; write the first hex digit
+     PutCh   AL           ;imprime el digito hexadecimal
 
 skipHex2:
-     mov     EAX,[exp]   ; restore input character in AL
-     cmp     CX,8
+     mov     EAX,[exp]   ;restaura el valor del EAX
+     cmp     CX,8 	 ;dependiendo del registro CX, el movimiento de los bits siempre será diferente
+ 			 ;siempre se van a mover de 4 en 4 bits dependiendo del CX y se aplica un 'and' de 0Fh al AL
+			 ;para dejar el valor solo en los primeros 4 bits del AL
      je      count_is_8
      cmp     CX,7
      je      count_is_7
@@ -1187,8 +1174,8 @@ exit_printing_hex:
  
  read_char_oct:
      mov     EAX, [exp]
-     shr     EAX, 30      ; move upper 3 bits to lower half
-     mov     CX,11         ; loop count - 2 hex digits to print
+     shr     EAX, 30      ;mueve los 4 bits mas significativos a la mitad menor
+     mov     CX,11        ;contador para el ciclo - 11 digitos octales a imprimir
 print_digit_oct:
      test    AL, 111b
      jz      oct_is_zero
@@ -1200,12 +1187,14 @@ oct_is_zero:
 
 oct_not_zero:
      inc     byte[byteVarOct]
-     add     AL,'0'       ; otherwise, convert to 0 through 9
-     PutCh   AL           ; write the first hex digit
+     add     AL,'0'       ;se convierte en su caractér numérico correspondiente
+     PutCh   AL           ;se imprime el caracter octal
 
 skip_oct:
-     mov     EAX,[exp]   ; restore input character in AL
-     cmp     CX,11
+     mov     EAX,[exp]    ;restaura el valor del EAX
+     cmp     CX,11	  ;dependiendo del registro CX, el movimiento de los bits siempre será diferente
+ 			  ;siempre se van a mover de 3 en 3 bits dependiendo del CX y se aplica un 'and' de 07h al AL
+			  ;para dejar el valor solo en los primeros 3 bits del AL
      je      count_oct_is_11
      cmp     CX,10
      je      count_oct_is_10
