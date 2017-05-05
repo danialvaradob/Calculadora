@@ -27,6 +27,8 @@ byteVar                  db	0
 byteVarOct               db	0
 
 
+banderaPrimerEle         db      1   ;bandera utilizada para el primer elemento de cada operation
+                                     ;si esta encendido quiere decir que es el primero
 
 
 
@@ -46,12 +48,24 @@ ayuda10			db	'Para poder evaluar una expresión deberá escribir los operandos y
 ayuda11			db	'Si desea imprimir el resultado en alguna base específica del programa, puede agregar una letra reservada despues del =',0
 ayuda12			db	'Por ejemplo: num+(num2*num3/num4)-num5 =b   Esto dará el resultado de la expresión en binario',0
 
+salir0			db 	'----------------SALIR----------------',0
+salir1			db	'Estudiantes: Daniel Alvarado Bonilla, Sergio Hidalgo Fonseca',0
+salir2			db	'Tecnológico de Costa Rica, Sede Central Cartago',0
+salir3			db	'Escuela de Computación, Ingeniería en Computación',0
+salir4			db	'I Semestre 2017',0
+salir5			db	'Prof. Ing. Esteban Arias Méndez',0
+
+no_space_error_msg      db        "No se pueden usar mas variables",0
+error_in_get_var_msg    db        "La variable utilizada no existe",0
+;--------------------------------------------------------------------------;
+
+
 
 .UDATA
-;operation      resb 256 
+operation       resb 256 
 resultadoTotal  resd 1
 cont            resb 1        
-exp             resd 256 ;where the exp op will be stored
+exp             resd 256 ;varible donde se guarda la expresion postfijo
 
 complement      resb 1   ;flag
 banderaBinario  resb 1   ;si el usuario quiere el resultado en binario, se enciende 
@@ -60,6 +74,45 @@ banderaHex      resb 1   ;si el usuario quiere el resultado en hexadecimal, se e
 banderaOct      resb 1   ;si el usuario quiere el resultado en octal, se enciende 
 first_1_bin     resb 1   
 minus_sign_flag resb 1   ;bandera utilizada para saber si se debe de cambiar el signo
+
+
+
+;---------------------------------------------------------------;
+;---------------------------------------------------------------;
+;---------------------------------------------------------------;
+var1            resb 1   ;el decimo byte guarda la direccion de memoria de
+var1n           resd 1   ;var1n
+
+var2            resb 1   
+var2n           resd 1
+
+var3            resb 1
+var3n           resd 1
+
+var4            resb 1
+var4n           resd 1
+
+var5            resb 1
+var5n           resd 1
+
+var6            resb 1
+var6n           resd 1
+
+var7            resb 1
+var7n           resd 1
+
+var8            resb 1
+var8n           resd 1
+
+var9            resb 1
+var9n           resd 1
+
+var10            resb 1
+var10n           resd 1
+
+n_used_var       resb 1 ;almacena la cantidad de variables usadas, maximo 10
+
+is_a_var         resb 1 ;Bandera utilizada para saber si es una variable la respuesta de la expresion
 
 .CODE
     .STARTUP
@@ -78,7 +131,9 @@ startCalc:
     mov         byte[banderaHex],0     ;resetea la bandera de Hex
     mov         byte[banderaOct],0     ;resetea la bandera de Oct
     mov         byte[first_1_bin],0    ;bandera utilizada para el primer bit del binario, si es 1 se le aplica complemento a 2
-    
+   
+    mov         byte[is_a_var],0       ;siempre se resetea porque no es variable
+ 
     mov         ESI,operation   ;Puntero que recorre la expresion dada por el usuario
     mov         EDI,exp         ;Puntero que recorre la expresion post fijo que se crea a traves del programa
     mov         CX,15   
@@ -109,8 +164,19 @@ check_ch:
     
     
 not_number:
+    
+    cmp         byte[ESI],'+'
+    je          operator_priority
+    cmp         byte[ESI],'-'
+    je          operator_priority
+    cmp         byte[ESI],'/'
+    je          operator_priority
+    cmp         byte[ESI],'*'
+    je          operator_priority
+    jmp         is_a_variable
 
-    jmp         operator_priority
+
+
 operator_priority_end:
     
     inc         ESI             ;pasa a la siguiente celda de memoria
@@ -194,6 +260,357 @@ activar_banderaOct:
     mov         byte[banderaOct],1
     jmp     startEval
     
+ ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
+ ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+ ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+ ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+ ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
+ ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+ ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+ ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+ ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+ ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+ ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+ ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+ ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+ ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+ ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+ ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;      
+is_a_variable:
+    ;primero revisa si se esta creando una variable o si se esta pidiendo el valor
+    cmp         byte[ESI + 1], ':'  ;si es un = quiere decir que esta declarando una variable
+    jne         get_var_value
+
+    cmp         byte[n_used_var ],11
+    je          no_space_error
+    mov         byte[is_a_var],1
+    cmp         byte[n_used_var ],1       ;al entrar aca se abilita que es una varaible
+    je          variable1
+    cmp         byte[n_used_var ],2
+    je          variable2
+    cmp         byte[n_used_var ],3
+    je          variable3
+    cmp         byte[n_used_var ],4
+    je          variable4
+    cmp         byte[n_used_var ],5
+    je          variable5
+    cmp         byte[n_used_var ],6
+    je          variable6
+    cmp         byte[n_used_var ],7
+    je          variable7
+    cmp         byte[n_used_var ],8
+    je          variable8
+    cmp         byte[n_used_var ],9
+    je          variable9
+    cmp         byte[n_used_var ],10
+    je          variable10
+    
+
+variable1:
+    sub         EAX,EAX
+    mov         AL,byte[ESI]
+    mov         byte[var1],AL   ;le copia digamos x al primer dw de la variable     1
+    ;nwln
+    ;PutCh       byte[ESI]
+    inc         ESI                     ; aca tiene un '='
+    ;nwln
+    ;PutCh       byte[ESI]
+    inc         ESI                     ; para empezar en la varaible y obtener postfijo etc.
+    jmp         startAll
+    
+variable2:
+    sub         EAX,EAX
+    mov         AL,byte[ESI]
+    mov         byte[var2],AL   ;le copia digamos x al primer dw de la variable     1
+   inc         ESI                     ; aca tiene un '='
+    inc         ESI                     ; para empezar en la varaible y obtener postfijo etc.
+    jmp         startAll
+variable3:
+    sub         EAX,EAX
+    mov         AL,byte[ESI]
+    
+    mov         byte[var3],AL   ;le copia digamos x al primer dw de la variable     1
+   inc         ESI                     ; aca tiene un '='
+    inc         ESI                     ; para empezar en la varaible y obtener postfijo etc.
+    jmp         startAll
+variable4:
+    sub         EAX,EAX
+    mov         AL,byte[ESI]
+    
+    mov         byte[var4],AL   ;le copia digamos x al primer dw de la variable     1
+   inc         ESI                     ; aca tiene un '='
+    inc         ESI                     ; para empezar en la varaible y obtener postfijo etc.
+    jmp         startAll
+variable5:
+    sub         EAX,EAX
+    mov         AL,byte[ESI]
+    
+    mov         byte[var5],AL   ;le copia digamos x al primer dw de la variable     1
+   inc         ESI                     ; aca tiene un '='
+    inc         ESI                     ; para empezar en la varaible y obtener postfijo etc.
+    jmp         startAll
+variable6:
+    sub         EAX,EAX
+    mov         AL,byte[ESI]
+    
+    mov         byte[var6],AL   ;le copia digamos x al primer dw de la variable     1
+   inc         ESI                     ; aca tiene un '='
+    inc         ESI                     ; para empezar en la varaible y obtener postfijo etc.
+    jmp         startAll
+variable7:
+    sub         EAX,EAX
+    mov         AL,byte[ESI]
+    
+    mov         byte[var7],AL   ;le copia digamos x al primer dw de la variable     1
+   inc         ESI                     ; aca tiene un '='
+    inc         ESI                     ; para empezar en la varaible y obtener postfijo etc.
+    jmp         startAll
+variable8:
+    sub         EAX,EAX
+    mov         AL,byte[ESI]
+    
+    mov         byte[var8],AL   ;le copia digamos x al primer dw de la variable     1
+    inc         ESI                     ; aca tiene un '='
+    inc         ESI                     ; para empezar en la varaible y obtener postfijo etc.
+    jmp         startAll
+variable9:
+    sub         EAX,EAX
+    mov         AL,byte[ESI]
+    
+    mov         byte[var9],AL   ;le copia digamos x al primer dw de la variable     1
+   inc         ESI                     ; aca tiene un '='
+    inc         ESI                     ; para empezar en la varaible y obtener postfijo etc.
+    jmp         startAll
+variable10:
+    sub         EAX,EAX
+    mov         AL,byte[ESI]
+    
+    mov         byte[var10],AL   ;le copia digamos x al primer dw de la variable     1
+   inc         ESI                     ; aca tiene un '='
+    inc         ESI                     ; para empezar en la varaible y obtener postfijo etc.
+    jmp         startAll
+
+setting_var_value:
+    
+    cmp         byte[n_used_var ],1  ;voy a setear la primera variable, la primer vez esta en 0
+    je          set_value_v1          
+    cmp         byte[n_used_var],2
+    je          set_value_v2
+    cmp         byte[n_used_var],3
+    je          set_value_v3
+    cmp         byte[n_used_var],4
+    je          set_value_v4
+    cmp         byte[n_used_var],5
+    je          set_value_v5
+    cmp         byte[n_used_var],6
+    je          set_value_v6
+    cmp         byte[n_used_var],7
+    je          set_value_v7
+    cmp         byte[n_used_var],8
+    je          set_value_v8
+    cmp         byte[n_used_var],9
+    je          set_value_v9
+    cmp         byte[n_used_var],10
+    je          set_value_v10
+    
+
+set_value_v1:
+    mov     EAX,dword[exp]
+    mov     dword[var1n],EAX
+    mov     byte[n_used_var],2
+    jmp     startCalc
+
+set_value_v2:
+    mov     EAX,dword[exp]
+    mov     dword[var2n],EAX
+    mov     byte[n_used_var],3
+    jmp     startCalc
+
+set_value_v3:
+    mov     EAX,dword[exp]
+    mov     dword[var3n],EAX
+    mov     byte[n_used_var],4
+    jmp     startCalc
+
+set_value_v4:
+    mov     EAX,dword[exp]
+    mov     dword[var4n],EAX
+    mov     byte[n_used_var],5
+    jmp     startCalc
+
+set_value_v5:
+    mov     EAX,dword[exp]
+    mov     dword[var5n],EAX
+    mov     byte[n_used_var],6
+    jmp     startCalc
+
+set_value_v6:
+    mov     EAX,dword[exp]
+    mov     dword[var6n],EAX
+    mov     byte[n_used_var],7
+    jmp     startCalc
+
+set_value_v7:
+    mov     EAX,dword[exp]
+    mov     dword[var7n],EAX
+    mov     byte[n_used_var],8
+    jmp     startCalc
+
+set_value_v8:
+    mov     EAX,dword[exp]
+    mov     dword[var8n],EAX
+    mov     byte[n_used_var],9
+    jmp     startCalc
+
+set_value_v9:
+    mov     EAX,dword[exp]
+    mov     dword[var9n],EAX
+    mov     byte[n_used_var],10
+    jmp     startCalc
+
+set_value_v10:
+    mov     EAX,dword[exp]
+    mov     dword[var10n],EAX
+    mov     byte[n_used_var],11
+    jmp     startCalc
+
+
+
+get_var_value:   ;TODOS los get var, inserta el valor en la post fijo para luego poder ser evaluado
+    sub         EAX,EAX
+    mov         AL,byte[ESI]
+    
+    cmp    AL,byte[var1]
+    je      get_var_v1
+    cmp    AL,byte[var2]
+    je      get_var_v2
+    cmp    AL,byte[var3]
+    je      get_var_v3
+    cmp    AL,byte[var4]
+    je      get_var_v4
+    cmp    AL,byte[var5]
+    je      get_var_v5
+    cmp    AL,byte[var6]
+    je      get_var_v6
+    cmp    AL,byte[var7]
+    je      get_var_v7
+    cmp    AL,byte[var8]
+    je      get_var_v8
+    cmp    AL,byte[var9]
+    je      get_var_v9
+    cmp    AL,byte[var10]
+    je      get_var_v10
+    jmp     error_in_get_var
+    
+    
+
+get_var_v1:
+    mov        EAX,dword[var1n] 
+    mov         dword[EDI],EAX  
+    ;se aumenta 4 veces para pasar al siguiente double
+    inc         EDI
+    inc         EDI
+    inc         EDI
+    inc         EDI
+    
+    inc         ESI  
+    jmp         startAll    
+get_var_v2:
+    mov        EAX,dword[var2n] 
+    mov        dword[EDI],EAX 
+    inc         EDI
+    inc         EDI
+    inc         EDI
+    inc         EDI
+    inc         ESI 
+    jmp         startAll
+get_var_v3:
+    mov        EAX,dword[var3n] 
+    mov        dword[EDI],EAX  
+    inc         EDI
+    inc         EDI
+    inc         EDI
+    inc         EDI
+    inc         ESI 
+    jmp         startAll
+get_var_v4:
+    mov        EAX,dword[var4n] 
+    mov        dword[EDI],EAX 
+    inc         EDI 
+    inc         EDI
+    inc         EDI
+    inc         EDI
+    
+    inc         ESI 
+get_var_v5:
+    mov        EAX,dword[var5n] 
+    mov        dword[EDI],EAX 
+    inc         EDI 
+    inc         EDI
+    inc         EDI
+    inc         EDI
+    
+    inc         ESI 
+    jmp         startAll
+get_var_v6:
+    mov        EAX,dword[var6n] 
+    mov        dword[EDI],EAX  
+    inc         EDI
+    inc         EDI
+    inc         EDI
+    inc         EDI
+
+    inc         ESI 
+    jmp         startAll
+get_var_v7:
+    mov        EAX,dword[var7n] 
+    mov        dword[EDI],EAX  
+    inc         EDI
+    inc         EDI
+    inc         EDI
+    inc         EDI
+    
+    inc         ESI 
+    jmp         startAll
+get_var_v8:
+    mov        EAX,dword[var8n] 
+    mov        dword[EDI],EAX
+    inc         EDI
+    inc         EDI
+    inc         EDI
+    inc         EDI
+      
+    inc         ESI 
+    jmp         startAll
+get_var_v9:
+    mov        EAX,dword[var9n] 
+    mov        dword[EDI],EAX  
+    inc         EDI
+    inc         EDI
+    inc         EDI
+    inc         EDI
+    
+    inc         ESI 
+    jmp         startAll
+get_var_v10:
+    mov        EAX,dword[var10n] 
+    mov        dword[EDI],EAX  
+    inc         EDI
+    inc         EDI
+    inc         EDI
+    inc         EDI
+    
+    inc         ESI 
+    jmp         startAll
+no_space_error:
+    PutStr      no_space_error_msg
+    jmp         startCalc
+
+
+error_in_get_var:
+    PutStr      error_in_get_var_msg    
+    jmp         startCalc
+
         
                 
 ;--------------------------------------------------------------------
@@ -206,6 +623,7 @@ activar_banderaOct:
     
 
 operator_priority:
+
     cmp         byte[primer_op],1           ;si es el primero operador, sin importar lo que sea lo inserta en la pila
     je          firsttime
     sub         EBX,EBX
@@ -302,17 +720,22 @@ end_priority:
 ;xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ;xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ;xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+sign_value:
+    cmp         byte[ESI],'-'
+    je          minus_sign
+
 firstCh_op:
     
           
     cmp         byte[ESI],'/'
     je          entry_error   
     cmp         byte[ESI],'*'
+    
     je          entry_error   
     cmp         byte[ESI + 1],'+'    
-    je          entry_error            ;2 consecutives operators == error   
+    je          secondE_plus            ;2 consecutives operators == error   
     cmp         byte[ESI + 1],'-'    
-    je          entry_error            ;2 consecutives operators == error
+    je          secondE_minus            ;2 consecutives operators == error
     cmp         byte[ESI + 1],'/'    
     je          entry_error            ;2 consecutives operators == error
     cmp         byte[ESI + 1],'*'    
@@ -320,13 +743,13 @@ firstCh_op:
     cmp         byte[ESI],'+'          ;does nothing, +1 = 1
     je          sum_sign  
     cmp         byte[ESI+1],'-'   
-    je         minus_sign   
-    cmp         byte[ESI +1],'0'
-    jl          not_number_nor_oper
-    cmp         byte[ESI + 1],'9'
-    jg          not_number_nor_oper 
-    jmp         is_a_number
+    je          minus_sign 
+
+secondE_minus:
     
+secondE_plus:
+    ;cmp[ESI],'+'
+ 
  
 sum_sign:
     sub         BX,BX   
@@ -628,8 +1051,7 @@ oct_expo_end:
     
     loop        finish_readingOct
   
-endOct:
-    ;PutLInt      [resultadoTotal]  
+endOct: 
     
     dec         ESI
     jmp         add_exp   
@@ -745,8 +1167,7 @@ hex_expo_end:
     
     loop        finish_readingHex
   
-endHex:
-    ;PutLInt      [resultadoTotal]  
+endHex: 
     
     dec         ESI
     jmp         add_exp   
@@ -992,7 +1413,7 @@ reset:
 overflow_mul:
     PutStr	   overflow_error_mul
     nwln
-    jmp		     exit
+    jmp		     startCalc
 
 done:
     nwln
@@ -1005,6 +1426,9 @@ done:
     
     
     PutLInt      dword[exp]
+
+    cmp         byte[is_a_var],1  ;es una variable el resultado se guarda, se debe setter la varaible
+    je          setting_var_value
     jmp         startCalc
 ;
 ;BIN---BIN-----BIN-----BIN----BIN----BIN-----BIN----BIN----
@@ -1271,21 +1695,22 @@ exit_printing_oct:
 ;------OCT------OCT------OCT------OCT------OCT------OCT------OCT------OCT------OCT
 ;------OCT------OCT------OCT------OCT------OCT------OCT------OCT------OCT------OCT
 
-exit:
-    .EXIT
+
 startHelp:
     cmp         byte[ESI+1],'a'
-    jne         endHelp
+    jne         startVar
     cmp         byte[ESI+2],'y'
-    jne         endHelp
+    jne         startVar
     cmp         byte[ESI+3],'u'
-    jne         endHelp
+    jne         startVar
     cmp         byte[ESI+4],'d'
-    jne         endHelp
+    jne         startVar
     cmp         byte[ESI+5],'a'
+    je		print_help
+    jmp 	startVar
     
     
-    
+print_help:
     PutStr	ayuda0
     nwln
     PutStr      ayuda1
@@ -1312,9 +1737,101 @@ startHelp:
     nwln
     PutStr	ayuda12
     nwln
-endHelp:
+    jmp         startCalc
+
+startVar:
+    cmp         byte[ESI+1],'v'
+    jne         startExit
+    cmp         byte[ESI+2],'a'
+    jne         startExit
+    cmp         byte[ESI+3],'r'
+    je		print_vars
+    jmp         startExit
+
+print_vars:
+        mov  	EBX,var1
+
+print_def_vars:
+	cmp 	EBX,var10
+        jg	startCalc
+	cmp	byte[EBX],0
+        jne 	print_result
+        inc 	EBX
+        inc 	EBX
+        inc 	EBX
+        inc 	EBX
+        inc 	EBX
+	jmp 	print_def_vars
+
+
+print_result:
+	PutCh	byte[EBX]
+        PutCh	':'
+        inc 	EBX
+	PutLInt dword[EBX]
+        nwln
+        inc 	EBX
+        inc 	EBX
+        inc 	EBX
+        inc 	EBX
+        jmp	print_def_vars
+
+startExit:
+    cmp         byte[ESI+1],'s'
+    jne         startCalc
+    cmp         byte[ESI+2],'a'
+    jne         startCalc
+    cmp         byte[ESI+3],'l'
+    jne         startCalc
+    cmp         byte[ESI+4],'i'
+    jne         startCalc
+    cmp         byte[ESI+5],'r'
+    je		print_var_exit
+    jmp    	startCalc
+
+
+print_var_exit:
+        mov  	EBX,var1
+
+print_def_vars_exit:
+	cmp 	EBX,var10
+        jg	print_exit
+	cmp	byte[EBX],0
+        jne 	print_result_exit
+        inc 	EBX
+        inc 	EBX
+        inc 	EBX
+        inc 	EBX
+        inc 	EBX
+	jmp 	print_def_vars_exit
+
+
+print_result_exit:
+	PutCh	byte[EBX]
+        PutCh	':'
+        inc 	EBX
+	PutLInt dword[EBX]
+        nwln
+        inc 	EBX
+        inc 	EBX
+        inc 	EBX
+        inc 	EBX
+        jmp	print_def_vars_exit
+
+print_exit:
+    PutStr	salir0
+    nwln
+    PutStr      salir1
+    nwln
+    PutStr	salir2
+    nwln
+    PutStr	salir3
+    nwln
+    PutStr	salir4
+    nwln
+    PutStr	salir5
+    nwln
     .EXIT
-    jmp     startCalc
 
   
   
