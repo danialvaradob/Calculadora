@@ -47,6 +47,12 @@ ayuda9			db   	'*NÚMEROS DECIMALES*: Por posición acepta todos los digitos ent
 ayuda10			db	'Para poder evaluar una expresión deberá escribir los operandos y operadores de forma correcta anteriormente explicado, cuando tenga lista la expresión DEBE agregar un espacio y un = al final de la expresión. Esto dará el resultado en decimal.',0
 ayuda11			db	'Si desea imprimir el resultado en alguna base específica del programa, puede agregar una letra reservada despues del =',0
 ayuda12			db	'Por ejemplo: num+(num2*num3/num4)-num5 =b   Esto dará el resultado de la expresión en binario',0
+ayuda13         db  '*VARIABLES: si se desea crear una variable se debe hacer de la siguiente forma: ',0
+ayuda14         db  'x:10+2*3 =   ---> es importante decir que el nombre de las variables solo pueden tener un character como nombre,',0
+ayuda15         db  'el programa NO funciona con variables de un nombre mas largo. Ademas, se debe de poner inmediatamente despues del character de la',0
+ayuda16         db  'variable los : e igual colocar al final de la expresion =',0
+ayuda17         db  'El programa acepta como maximo 10 variables, despues de esto se le hace saber al usuario que ya utilizo todas las variables posibles',0
+
 
 salir0			db 	'----------------SALIR----------------',0
 salir1			db	'Estudiantes: Daniel Alvarado Bonilla, Sergio Hidalgo Fonseca',0
@@ -80,6 +86,8 @@ minus_sign_flag resb 1   ;bandera utilizada para saber si se debe de cambiar el 
 ;---------------------------------------------------------------;
 ;---------------------------------------------------------------;
 ;---------------------------------------------------------------;
+;Reserves para uso de Variables
+
 var1            resb 1   ;el decimo byte guarda la direccion de memoria de
 var1n           resd 1   ;var1n
 
@@ -1742,6 +1750,16 @@ print_help:
     PutStr	ayuda11
     nwln
     PutStr	ayuda12
+    nwln
+    PutStr  ayuda13
+    nwln
+    PutStr  ayuda14
+    nwln
+    PutStr  ayuda15
+    nwln
+    PutStr  ayuda16
+    nwln
+    PutStr  ayuda17
     nwln
     jmp         startCalc
 
