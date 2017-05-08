@@ -418,61 +418,61 @@ set_value_v1:
     mov     EAX,dword[exp]
     mov     dword[var1n],EAX
     mov     byte[n_used_var],2
-    jmp     startCalc
+    jmp     finishDone_eval
 
 set_value_v2:
     mov     EAX,dword[exp]
     mov     dword[var2n],EAX
     mov     byte[n_used_var],3
-    jmp     startCalc
+    jmp     finishDone_eval
 
 set_value_v3:
     mov     EAX,dword[exp]
     mov     dword[var3n],EAX
     mov     byte[n_used_var],4
-    jmp     startCalc
+    jmp     finishDone_eval
 
 set_value_v4:
     mov     EAX,dword[exp]
     mov     dword[var4n],EAX
     mov     byte[n_used_var],5
-    jmp     startCalc
+    jmp     finishDone_eval
 
 set_value_v5:
     mov     EAX,dword[exp]
     mov     dword[var5n],EAX
     mov     byte[n_used_var],6
-    jmp     startCalc
+    jmp     finishDone_eval
 
 set_value_v6:
     mov     EAX,dword[exp]
     mov     dword[var6n],EAX
     mov     byte[n_used_var],7
-    jmp     startCalc
+    jmp     finishDone_eval
 
 set_value_v7:
     mov     EAX,dword[exp]
     mov     dword[var7n],EAX
     mov     byte[n_used_var],8
-    jmp     startCalc
+    jmp     finishDone_eval
 
 set_value_v8:
     mov     EAX,dword[exp]
     mov     dword[var8n],EAX
     mov     byte[n_used_var],9
-    jmp     startCalc
+    jmp     finishDone_eval
 
 set_value_v9:
     mov     EAX,dword[exp]
     mov     dword[var9n],EAX
     mov     byte[n_used_var],10
-    jmp     startCalc
+    jmp     finishDone_eval
 
 set_value_v10:
     mov     EAX,dword[exp]
     mov     dword[var10n],EAX
     mov     byte[n_used_var],11
-    jmp     startCalc
+    jmp     finishDone_eval
 
 
 
@@ -1416,6 +1416,13 @@ overflow_mul:
     jmp		     startCalc
 
 done:
+    cmp         byte[is_a_var],1  ;es una variable el resultado se guarda, se debe setter la variable
+    je          setting_var_value
+
+
+finishDone_eval:
+
+
     nwln
     cmp         byte[banderaBinario],1    ;Saltos dependiendo de la representacion que quiera el usuario
     je          read_charBin
@@ -1427,8 +1434,7 @@ done:
     
     PutLInt      dword[exp]
 
-    cmp         byte[is_a_var],1  ;es una variable el resultado se guarda, se debe setter la varaible
-    je          setting_var_value
+
     jmp         startCalc
 ;
 ;BIN---BIN-----BIN-----BIN----BIN----BIN-----BIN----BIN----
