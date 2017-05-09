@@ -15,11 +15,9 @@
 .DATA
 welcome_msg              db       "Bienvenido a la calculadora BinOctHex!",0
 input_sign               db       ">>",0
-;operation                db      "b01010+h6B*22*2 =",0     ;variables para prueba
-;operation               db     "10+5+o10 =o"
-;operation                db      "#ayuda"
 result_msg               db       "El resultado es: "
 bin_error_msg            db      "Entrada binaria erronea",0
+div_byzero		 db	 'Division entre 0',0
 errormsg                 db      "ERROR",0
 primer_op                db      1
 overflow_error_mul 	db  	'Ocurrió un overflow en una multiplicación',0
@@ -1368,7 +1366,9 @@ is_div:
     dec 	       ESI
     dec        	 ESI
     dec 	       ESI			
-    mov          ECX, dword[ESI]    	
+    mov          ECX, dword[ESI]
+    cmp		 ECX, 0
+    je 		 is_zero 	
     dec 	       ESI
     dec 	       ESI
     dec 	       ESI
@@ -1395,6 +1395,11 @@ apply_div:
     div		     ECX		;Realiza la division entre el EAX y el EXC
     mov        [ESI], EAX		
     jmp  	     rotateLeft
+is_zero:
+    nwln
+    PutStr 	div_byzero
+    nwln
+    jmp 	startCalc
 
 rotateLeft:    ;Funcion que mueve los operadores y operandos dos espacios atras, despues de hacer una operación
     inc        ESI
