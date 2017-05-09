@@ -181,6 +181,10 @@ not_number:
     je          operator_priority
     cmp         byte[ESI],'*'
     je          operator_priority
+    cmp         byte[ESI],'('
+    je          operator_priority
+    cmp         byte[ESI],')'
+    je          operator_priority
     jmp         is_a_variable
 
 
@@ -1386,7 +1390,7 @@ div_num_is_neg:
 apply_div:
     PutLInt 	 EAX
     PutCh	     '/'
-    PutLInt 	 EDX 
+    PutLInt 	 ECX 
     nwln 
     div		     ECX		;Realiza la division entre el EAX y el EXC
     mov        [ESI], EAX		
